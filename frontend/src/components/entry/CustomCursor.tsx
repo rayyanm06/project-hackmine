@@ -1,0 +1,207 @@
+import { useEffect, useRef } from 'react'
+
+export function CustomCursor({ active = true }: { active?: boolean }) {
+  const cursorRef = useRef<HTMLDivElement>(null)
+  const ringRef = useRef<HTMLDivElement>(null)
+  const trailRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // 1. Accessibility & Device Checks
+    const isTouch = window.matchMedia('(pointer: coarse)').matches
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (isTouch || prefersReducedMotion || !active) {
+      document.body.style.cursor = 'auto'
+      return
+    }
+
+    document.body.style.cursor = 'none'
+
+    // Mouse coordinates (stored in memory, NO React re-renders)
+    let mouseX = -100
+    let mouseY = -100
+    let ringX = -100
+    let ringY = -100
+    let trailX = -100
+    let trailY = -100
+    let isVisible = false
+    let currentHoverState: 'default' | 'interactive' | 'cta' = 'default'
+    let rafId: number | null = null
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX = e.clientX
+      mouseY = e.clientY
+
+      if (!isVisible) {
+        isVisible = true
+        ringX = mouseX
+        ringY = mouseY
+        trailX = mouseX
+        trailY = mouseY
+        if (cursorRef.current) cursorRef.current.style.opacity = '1'
+        if (ringRef.current) ringRef.current.style.opacity = '1'
+        if (trailRef.current) trailRef.current.style.opacity = '0.35'
+      }
+
+      // Check hover targets
+      const target = e.target as HTMLElement | null
+      if (target?.closest('[data-cursor="enter"], .enter-cta-btn, button[data-cta="enter"]')) {
+        setHoverMode('cta')
+      } else if (
+        target?.closest(
+          'button, a, input, select, [role="button"], .cursor-pointer, [data-interactive="true"]'
+        )
+      ) {
+        setHoverMode('interactive')
+      } else {
+        setHoverMode('default')
+      }
+    }
+
+    const handleMouseLeave = () => {
+      isVisible = false
+      if (cursorRef.current) cursorRef.current.style.opacity = '0'
+      if (ringRef.current) ringRef.current.style.opacity = '0'
+      if (trailRef.current) trailRef.current.style.opacity = '0'
+    }
+
+    const setHoverMode = (mode: 'default' | 'interactive' | 'cta') => {
+      if (currentHoverState === mode) return
+      currentHoverState = mode
+
+      if (!cursorRef.current || !ringRef.current) return
+
+      if (mode === 'cta') {
+        cursorRef.current.style.transform = `scale(1.22) rotate(45deg)`
+        ringRef.current.style.width = '36px'
+        ringRef.current.style.height = '36px'
+        ringRef.current.style.borderColor = 'rgba(180, 140, 75, 0.75)'
+        ringRef.current.style.backgroundColor = 'rgba(180, 140, 75, 0.08)'
+      } else if (mode === 'interactive') {
+        cursorRef.current.style.transform = `scale(1.12) rotate(15deg)`
+        ringRef.current.style.width = '30px'
+        ringRef.current.style.height = '30px'
+        ringRef.current.style.borderColor = 'rgba(180, 140, 75, 0.55)'
+        ringRef.current.style.backgroundColor = 'rgba(180, 140, 75, 0.04)'
+      } else {
+        cursorRef.current.style.transform = `scale(1.0) rotate(0deg)`
+        ringRef.current.style.width = '24px'
+        ringRef.current.style.height = '24px'
+        ringRef.current.style.borderColor = 'rgba(180, 140, 75, 0.35)'
+        ringRef.current.style.backgroundColor = 'transparent'
+      }
+    }
+
+    // High performance RAF loop using GPU translation
+    const loop = () => {
+      if (isVisible) {
+        // Direct cursor positioning
+        if (cursorRef.current) {
+          cursorRef.current.style.left = `${mouseX}px`
+          cursorRef.current.style.top = `${mouseY}px`
+        }
+
+        // Smooth trailing ring lerp
+        ringX += (mouseX - ringX) * 0.22
+        ringY += (mouseY - ringY) * 0.22
+        if (ringRef.current) {
+          ringRef.current.style.left = `${ringX}px`
+          ringRef.current.style.top = `${ringY}px`
+        }
+
+        // Subtle soft micro trail
+        trailX += (mouseX - trailX) * 0.12
+        trailY += (mouseY - trailY) * 0.12
+        if (trailRef.current) {
+          trailRef.current.style.left = `${trailX}px`
+          trailRef.current.style.top = `${trailY}px`
+        }
+      }
+
+      rafId = requestAnimationFrame(loop)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
+    document.addEventListener('mouseleave', handleMouseLeave)
+    rafId = requestAnimationFrame(loop)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseleave', handleMouseLeave)
+      if (rafId) cancelAnimationFrame(rafId)
+      document.body.style.cursor = 'auto'
+    }
+  }, [active])
+
+  if (!active) return null
+
+  return (
+    <>
+      {/* ── Subtle Micro Trail Dot (Extremely soft, restrained) ─── */}
+      <div
+        ref={trailRef}
+        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99997] w-1.5 h-1.5 rounded-full bg-[#b48c4b] opacity-0 transition-opacity duration-300"
+        style={{
+          boxShadow: '0 0 4px rgba(180, 140, 75, 0.3)',
+        }}
+      />
+
+      {/* ── Outer Concentric Compass Dial Ring ─────────────────── */}
+      <div
+        ref={ringRef}
+        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99998] w-6 h-6 rounded-full border border-[#b48c4b]/35 opacity-0 transition-[width,height,border-color,background-color] duration-200 ease-out"
+        style={{
+          boxShadow: '0 0 8px rgba(0, 0, 0, 0.05), inset 0 0 4px rgba(180, 140, 75, 0.08)',
+        }}
+      />
+
+      {/* ── Refined Luxury Resort Compass Symbol (Center Pointer) ── */}
+      <div
+        ref={cursorRef}
+        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99999] opacity-0 transition-[transform,opacity] duration-150 ease-out"
+      >
+        <svg
+          className="w-5 h-5 filter"
+          style={{
+            /* Refined dual shadow technique for visibility on both light and dark backgrounds */
+            filter:
+              'drop-shadow(0 1px 1.5px rgba(28, 20, 10, 0.45)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.9))',
+          }}
+          viewBox="0 0 24 24"
+        >
+          {/* Subtle Outer Cardinal Ticks */}
+          <circle
+            cx="12"
+            cy="12"
+            r="8.5"
+            fill="none"
+            stroke="#9e7634"
+            strokeWidth="0.65"
+            strokeDasharray="1.2 2.2"
+            opacity="0.45"
+          />
+
+          {/* North Point (Two-Tone Brass / Gold Shading) */}
+          <path d="M12 2.5 L12 12 L10.8 10.2 Z" fill="#b88c42" />
+          <path d="M12 2.5 L13.2 10.2 L12 12 Z" fill="#8c672b" />
+
+          {/* South Point */}
+          <path d="M12 21.5 L12 12 L13.2 13.8 Z" fill="#b88c42" />
+          <path d="M12 21.5 L10.8 13.8 L12 12 Z" fill="#8c672b" />
+
+          {/* East Point */}
+          <path d="M21.5 12 L12 12 L13.8 10.8 Z" fill="#b88c42" />
+          <path d="M21.5 12 L13.8 13.2 L12 12 Z" fill="#8c672b" />
+
+          {/* West Point */}
+          <path d="M2.5 12 L12 12 L10.8 13.8 Z" fill="#b88c42" />
+          <path d="M2.5 12 L10.2 10.8 L12 12 Z" fill="#8c672b" />
+
+          {/* Center Precision Marine Pivot & Jewel */}
+          <circle cx="12" cy="12" r="2.2" fill="#faf8f4" stroke="#8c672b" strokeWidth="0.75" />
+          <circle cx="12" cy="12" r="1.1" fill="#9e7634" />
+        </svg>
+      </div>
+    </>
+  )
+}
