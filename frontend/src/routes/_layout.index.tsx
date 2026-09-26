@@ -21,7 +21,6 @@ import {
   History,
   ClipboardList,
   Eye,
-  Building,
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -136,6 +135,176 @@ const CANCELLATION_RISK_DATA = [
 
 type AnalyticsTab = 'occupancy' | 'readiness' | 'requests' | 'flow' | 'rates' | 'cancellations'
 
+export type ResortZoneKey = 'property' | 'people' | 'operations' | 'intelligence'
+
+const ZONE_BG_COLORS: Record<ResortZoneKey, string> = {
+  property: '#F3EEE3',
+  people: '#FBF9F4',
+  operations: '#F4F1E9',
+  intelligence: '#FBF9F4',
+}
+
+interface ResortZoneProps {
+  id: string
+  zoneKey: ResortZoneKey
+  zoneNumber: string
+  zoneTitle: string
+  description?: string
+  accentColor: string
+  headerExtra?: React.ReactNode
+  onZoneVisible?: (zoneKey: ResortZoneKey) => void
+  children: React.ReactNode
+}
+
+function ResortZone({
+  id,
+  zoneKey,
+  zoneNumber,
+  zoneTitle,
+  description,
+  accentColor,
+  headerExtra,
+  onZoneVisible,
+  children,
+}: ResortZoneProps) {
+  const zoneRef = useRef<HTMLDivElement>(null)
+  const [hasRevealed, setHasRevealed] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+      if (mediaQuery.matches) {
+        setPrefersReducedMotion(true)
+        setHasRevealed(true)
+        return
+      }
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setHasRevealed(true)
+            if (entry.intersectionRatio > 0.15) {
+              onZoneVisible?.(zoneKey)
+            }
+          }
+        })
+      },
+      {
+        threshold: [0.05, 0.25],
+        rootMargin: '0px 0px -40px 0px',
+      }
+    )
+
+    if (zoneRef.current) {
+      observer.observe(zoneRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [zoneKey, onZoneVisible])
+
+  return (
+    <section
+      id={id}
+      ref={zoneRef}
+      className="relative pt-8 sm:pt-10 pb-2 space-y-6 sm:space-y-7"
+    >
+      {/* ── Zone Architectural Header ── */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="space-y-1">
+            {/* 1. Small Section Label: fades in (250ms) */}
+            <div
+              className={`flex items-center gap-2 transition-opacity duration-[250ms] ease-out ${
+                prefersReducedMotion || hasRevealed ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-xs shrink-0"
+                style={{ backgroundColor: accentColor }}
+              />
+              <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#1C3035]/70 dark:text-slate-400">
+                {zoneNumber}
+              </span>
+            </div>
+
+            {/* 2. Section Title: moves upward 12–18px (reduced 4-8px on mobile), fades 0 → 1 (350ms) */}
+            <div
+              className={`transition-all duration-[350ms] ease-out ${
+                prefersReducedMotion
+                  ? 'opacity-100 translate-y-0'
+                  : hasRevealed
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-2 sm:translate-y-3.5'
+              }`}
+              style={{
+                transitionDelay: prefersReducedMotion ? '0ms' : '80ms',
+              }}
+            >
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-tight text-[#1C3035] dark:text-white">
+                {zoneTitle}
+              </h2>
+              {description && (
+                <p className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 mt-1 max-w-3xl">
+                  {description}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Header Action or Extra context */}
+          {headerExtra && (
+            <div
+              className={`shrink-0 transition-opacity duration-[350ms] ease-out ${
+                prefersReducedMotion || hasRevealed ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                transitionDelay: prefersReducedMotion ? '0ms' : '100ms',
+              }}
+            >
+              {headerExtra}
+            </div>
+          )}
+        </div>
+
+        {/* 3. Thin Architectural Divider Line: draws 0% → 100% (450ms) */}
+        <div className="relative pt-2 pb-1 overflow-hidden">
+          <div
+            className={`h-[1.5px] w-full bg-[#1C3035]/20 dark:bg-slate-700 transform origin-left transition-all duration-[450ms] ease-out ${
+              prefersReducedMotion
+                ? 'scale-x-100 opacity-100'
+                : hasRevealed
+                ? 'scale-x-100 opacity-100'
+                : 'scale-x-0 opacity-0'
+            }`}
+            style={{
+              transitionDelay: prefersReducedMotion ? '0ms' : '160ms',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 4. Section Content: moves upward 8–12px (reduced 4-8px on mobile), fades 0 → 1 (500ms) */}
+      <div
+        className={`transition-all duration-[500ms] ease-out ${
+          prefersReducedMotion
+            ? 'opacity-100 translate-y-0'
+            : hasRevealed
+            ? 'opacity-100 translate-y-0'
+            : 'opacity-0 translate-y-1 sm:translate-y-2.5'
+        }`}
+        style={{
+          transitionDelay: prefersReducedMotion ? '0ms' : '240ms',
+        }}
+      >
+        {children}
+      </div>
+    </section>
+  )
+}
+
 function DashboardPage() {
   const navigate = useNavigate()
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => AuthService.getCurrentUser())
@@ -143,6 +312,19 @@ function DashboardPage() {
   const [selectedRoom, setSelectedRoom] = useState<ResortRoom | null>(INITIAL_ROOMS.find(r => r.id === '204') || null)
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>('occupancy')
   const [activeWingFilter, setActiveWingFilter] = useState<string>('all')
+  const [activeZone, setActiveZone] = useState<ResortZoneKey>('property')
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      setIsDark(document.documentElement.classList.contains('dark'))
+      const observer = new MutationObserver(() => {
+        setIsDark(document.documentElement.classList.contains('dark'))
+      })
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+      return () => observer.disconnect()
+    }
+  }, [])
 
   // Staff Desk & Resort Reference Interactive Directional State
   const [hoveredFeatureId, setHoveredFeatureId] = useState<string | null>(null)
@@ -557,7 +739,12 @@ function DashboardPage() {
     : rooms.filter(r => r.wing === activeWingFilter)
 
   return (
-    <div className="w-full min-h-screen px-4 sm:px-6 lg:px-8 py-8 space-y-10 max-w-[1600px] mx-auto select-none font-manrope bg-[#F3EEE3] dark:bg-slate-950 text-[#1C3035] dark:text-slate-100 transition-colors">
+    <div
+      className="w-full min-h-screen px-4 sm:px-6 lg:px-8 py-8 space-y-12 sm:space-y-16 max-w-[1600px] mx-auto select-none font-manrope dark:bg-slate-950 text-[#1C3035] dark:text-slate-100 transition-colors duration-700 ease-out"
+      style={{
+        backgroundColor: !isDark ? ZONE_BG_COLORS[activeZone] : undefined,
+      }}
+    >
       
       {/* ═══════════════════════════════════════════════════════════════════
           ZONE 1: OPERATIONAL HEADER & RESORT PULSE
@@ -716,26 +903,18 @@ function DashboardPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 2: MAIN VISUAL — LIVE RESORT / ROOM BOARD
-          Architectural Room Board + Progressive Disclosure Context Panel
+          ZONE 01 / PROPERTY — LIVE RESORT
+          Interactive property floor view. Room board & context panel.
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="space-y-4">
-        
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[#1C3035]/20 dark:border-slate-800 pb-3">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <Building className="size-4 text-[#5B9EA3]" />
-              <h2 className="text-base sm:text-lg font-black uppercase tracking-tight text-[#1C3035] dark:text-white">
-                Live Resort & Room Board
-              </h2>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
-              Interactive property floor view. Select any room to inspect occupancy, guest needs, or change readiness.
-            </p>
-          </div>
-
-          {/* Wing Filter Buttons */}
+      <ResortZone
+        id="zone-property"
+        zoneKey="property"
+        zoneNumber="01 / PROPERTY"
+        zoneTitle="LIVE RESORT"
+        description="Interactive property floor view. Select any room to inspect occupancy, guest needs, or change readiness."
+        accentColor="#78AAA0"
+        onZoneVisible={setActiveZone}
+        headerExtra={
           <div className="flex flex-wrap gap-1.5 items-center">
             {wings.map(w => (
               <button
@@ -752,8 +931,8 @@ function DashboardPage() {
               </button>
             ))}
           </div>
-        </div>
-
+        }
+      >
         {/* ── Visual Room Board & Context Panel Layout ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
@@ -1005,199 +1184,26 @@ function DashboardPage() {
           </div>
 
         </div>
-      </section>
+      </ResortZone>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 3: TODAY'S SHIFT (Operational Shift Planner Timeline)
-          Connected horizontal strip answering "What does staff need to do?"
+          ZONE 02 / PEOPLE — STAFF & SERVICE
+          Staff Desk quick actions + 10 features + Resort Reference panel.
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <Clock className="size-4 text-[#2D8CFF]" />
-            <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
-              Today's Shift · Operations Schedule
-            </h2>
-          </div>
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            Flow of the Resort Day
-          </span>
-        </div>
-
-        {/* Horizontal Shift Timeline Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 pt-1">
-          {SHIFT_MILESTONES.map((item, idx) => (
-            <div
-              key={idx}
-              className={`p-4 rounded-lg border-2 transition-all relative flex flex-col justify-between ${
-                item.status === 'active'
-                  ? 'border-[#2D8CFF] bg-[#2D8CFF]/10 ring-2 ring-[#2D8CFF]/30 shadow-[2px_2px_0px_#2D8CFF]'
-                  : item.status === 'completed'
-                  ? 'border-[#1C3035]/20 bg-[#F3EEE3]/50 dark:bg-slate-800/40 opacity-80'
-                  : 'border-[#1C3035]/20 bg-[#FBF9F4] dark:bg-slate-800/60'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-mono font-black tracking-wider text-[#1C3035] dark:text-white">
-                    {item.time}
-                  </span>
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
-                    item.status === 'active'
-                      ? 'bg-[#2D8CFF] text-white'
-                      : item.status === 'completed'
-                      ? 'bg-emerald-700 text-white'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {item.status === 'active' ? 'NOW' : item.status}
-                  </span>
-                </div>
-
-                <h3 className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
-                  {item.title}
-                </h3>
-                <div className="text-xs font-extrabold text-[#5B9EA3] mt-0.5">
-                  {item.count}
-                </div>
-              </div>
-
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-2 pt-2 border-t border-[#1C3035]/10 dark:border-slate-700">
-                {item.note}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 4 & 5: ASYMMETRIC GRID: NEEDS ATTENTION QUEUE + TODAY'S ACTIVITY
-          Human hospitality language with direct verbs
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* LEFT: NEEDS ATTENTION QUEUE (7 cols on lg) */}
-        <div className="lg:col-span-7 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="size-4 text-[#C96B56]" />
-              <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
-                Needs Attention · Operational Queue
-              </h2>
-            </div>
-            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#C96B56]/15 text-[#C96B56] border border-[#C96B56]/30 uppercase tracking-wider">
-              {attentionItems.length} Urgent Items
-            </span>
-          </div>
-
-          {/* Operational Queue Rows */}
-          <div className="space-y-3">
-            {attentionItems.map((item) => (
-              <div
-                key={item.id}
-                className="p-3.5 rounded-lg border-2 border-[#1C3035]/20 dark:border-slate-800 bg-[#F3EEE3]/70 dark:bg-slate-800/50 hover:border-[#1C3035] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase ${item.badgeColor}`}>
-                      {item.location}
-                    </span>
-                    <span className="text-[10px] font-extrabold uppercase text-slate-500">
-                      {item.area} · {item.urgency}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400">
-                      {item.timestamp}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
-                    {item.problem}
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                    Responsible: <span className="font-bold text-[#1C3035] dark:text-slate-200">{item.assignedTo}</span>
-                  </p>
-                </div>
-
-                <Button
-                  onClick={() => navigate({ to: item.actionPath })}
-                  className="rounded-lg px-4 py-2 h-auto text-xs font-black bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white border-2 border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all gap-1.5 shrink-0 self-start sm:self-center cursor-pointer"
-                >
-                  <span>{item.actionLabel}</span>
-                  <ArrowRight className="size-3.5" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* RIGHT: TODAY'S ACTIVITY (5 cols on lg) */}
-        <div className="lg:col-span-5 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#78AAA0]" />
-              <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
-                Today's Activity
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate({ to: '/audit' })}
-              className="text-xs font-black text-[#2D8CFF] hover:underline cursor-pointer"
-            >
-              Full Log →
-            </button>
-          </div>
-
-          {/* Activity Feed */}
-          <div className="space-y-2.5 text-xs">
-            {[
-              { time: '18:42', person: 'Rahul Sharma', room: 'Room 204', desc: 'completed AC repair unit inspection' },
-              { time: '18:31', person: 'Sneha Reddy', room: 'Room 305', desc: 'requested 2 extra bath towels' },
-              { time: '18:18', person: 'Housekeeping', room: 'Room 105', desc: 'marked ready for guest check-in' },
-              { time: '18:04', person: 'Priya Nair', room: 'Room 210', desc: 'assigned to evening turn-down inspection' },
-              { time: '17:52', person: 'Duty Manager', room: 'Room 201', desc: 'verified villa turnover with photo QA' },
-            ].map((act, idx) => (
-              <div
-                key={idx}
-                className="p-2.5 rounded-lg bg-[#F3EEE3]/60 dark:bg-slate-800/40 border border-[#1C3035]/15 dark:border-slate-700 flex items-start gap-2.5"
-              >
-                <span className="text-[11px] font-mono font-bold text-slate-500 w-12 shrink-0 pt-0.5">
-                  {act.time}
-                </span>
-                <p className="text-xs font-medium text-[#1C3035] dark:text-slate-200 leading-snug">
-                  <span className="font-extrabold text-[#1C3035] dark:text-white">{act.person}</span>{' '}
-                  ({act.room}) {act.desc}.
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div className="pt-2 border-t border-[#1C3035]/10 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500">
-            <span>Real-time operations log</span>
-            <span className="text-[#5B9EA3]">✓ Live & Synchronized</span>
-          </div>
-        </div>
-
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 6: STAFF DESK + RESORT REFERENCE
-          Two-part experience: Left Navigation/Actions + Right Dedicated Visual Reference Panel
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between border-b-2 border-[#1C3035]/20 dark:border-slate-800 pb-3">
-          <div className="space-y-0.5">
-            <h2 className="text-base sm:text-lg font-black uppercase tracking-tight text-[#1C3035] dark:text-white">
-              Staff Desk & Operations Console
-            </h2>
-            <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
-              Fast navigation rail connected to real-time physical resort reference imagery.
-            </p>
-          </div>
+      <ResortZone
+        id="zone-people"
+        zoneKey="people"
+        zoneNumber="02 / PEOPLE"
+        zoneTitle="STAFF & SERVICE"
+        description="Fast navigation rail connected to real-time physical resort reference imagery."
+        accentColor="#C96B56"
+        onZoneVisible={setActiveZone}
+        headerExtra={
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Hospitality Console
           </span>
-        </div>
-
+        }
+      >
         {/* ── Two-Part Visual Composition ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
@@ -1426,13 +1432,204 @@ function DashboardPage() {
           </div>
 
         </div>
-      </section>
+      </ResortZone>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 7: BOTTOM — RESORT INTELLIGENCE / DATA ANALYSIS
-          Placed strictly at the bottom. Wide dynamic manager workspace.
+          ZONE 03 / OPERATIONS — RESORT OPERATIONS
+          Today's shift milestones, operational queue, and live property activity.
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-6 sm:p-7 shadow-[5px_5px_0px_#1C3035] space-y-6">
+      <ResortZone
+        id="zone-operations"
+        zoneKey="operations"
+        zoneNumber="03 / OPERATIONS"
+        zoneTitle="RESORT OPERATIONS"
+        description="Shift schedule milestones, operational priority queue, and live property activity."
+        accentColor="#5B9EA3"
+        onZoneVisible={setActiveZone}
+      >
+        <div className="space-y-6">
+          {/* Today's Shift schedule section */}
+          <div className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Clock className="size-4 text-[#2D8CFF]" />
+                <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
+                  Today's Shift · Operations Schedule
+                </h2>
+              </div>
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Flow of the Resort Day
+              </span>
+            </div>
+
+            {/* Horizontal Shift Timeline Strip */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 pt-1">
+              {SHIFT_MILESTONES.map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`p-4 rounded-lg border-2 transition-all relative flex flex-col justify-between ${
+                    item.status === 'active'
+                      ? 'border-[#2D8CFF] bg-[#2D8CFF]/10 ring-2 ring-[#2D8CFF]/30 shadow-[2px_2px_0px_#2D8CFF]'
+                      : item.status === 'completed'
+                      ? 'border-[#1C3035]/20 bg-[#F3EEE3]/50 dark:bg-slate-800/40 opacity-80'
+                      : 'border-[#1C3035]/20 bg-[#FBF9F4] dark:bg-slate-800/60'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-mono font-black tracking-wider text-[#1C3035] dark:text-white">
+                        {item.time}
+                      </span>
+                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
+                        item.status === 'active'
+                          ? 'bg-[#2D8CFF] text-white'
+                          : item.status === 'completed'
+                          ? 'bg-emerald-700 text-white'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}>
+                        {item.status === 'active' ? 'NOW' : item.status}
+                      </span>
+                    </div>
+
+                    <h3 className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
+                      {item.title}
+                    </h3>
+                    <div className="text-xs font-extrabold text-[#5B9EA3] mt-0.5">
+                      {item.count}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-2 pt-2 border-t border-[#1C3035]/10 dark:border-slate-700">
+                    {item.note}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Asymmetric Grid: Needs Attention Queue + Today's Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* LEFT: NEEDS ATTENTION QUEUE (7 cols on lg) */}
+            <div className="lg:col-span-7 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="size-4 text-[#C96B56]" />
+                  <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
+                    Needs Attention · Operational Queue
+                  </h2>
+                </div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#C96B56]/15 text-[#C96B56] border border-[#C96B56]/30 uppercase tracking-wider">
+                  {attentionItems.length} Urgent Items
+                </span>
+              </div>
+
+              {/* Operational Queue Rows */}
+              <div className="space-y-3">
+                {attentionItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3.5 rounded-lg border-2 border-[#1C3035]/20 dark:border-slate-800 bg-[#F3EEE3]/70 dark:bg-slate-800/50 hover:border-[#1C3035] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase ${item.badgeColor}`}>
+                          {item.location}
+                        </span>
+                        <span className="text-[10px] font-extrabold uppercase text-slate-500">
+                          {item.area} · {item.urgency}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {item.timestamp}
+                        </span>
+                      </div>
+
+                      <h3 className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
+                        {item.problem}
+                      </h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                        Responsible: <span className="font-bold text-[#1C3035] dark:text-slate-200">{item.assignedTo}</span>
+                      </p>
+                    </div>
+
+                    <Button
+                      onClick={() => navigate({ to: item.actionPath })}
+                      className="rounded-lg px-4 py-2 h-auto text-xs font-black bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white border-2 border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all gap-1.5 shrink-0 self-start sm:self-center cursor-pointer"
+                    >
+                      <span>{item.actionLabel}</span>
+                      <ArrowRight className="size-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* RIGHT: TODAY'S ACTIVITY (5 cols on lg) */}
+            <div className="lg:col-span-5 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#78AAA0]" />
+                  <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
+                    Today's Activity
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: '/audit' })}
+                  className="text-xs font-black text-[#2D8CFF] hover:underline cursor-pointer"
+                >
+                  Full Log →
+                </button>
+              </div>
+
+              {/* Activity Feed */}
+              <div className="space-y-2.5 text-xs">
+                {[
+                  { time: '18:42', person: 'Rahul Sharma', room: 'Room 204', desc: 'completed AC repair unit inspection' },
+                  { time: '18:31', person: 'Sneha Reddy', room: 'Room 305', desc: 'requested 2 extra bath towels' },
+                  { time: '18:18', person: 'Housekeeping', room: 'Room 105', desc: 'marked ready for guest check-in' },
+                  { time: '18:04', person: 'Priya Nair', room: 'Room 210', desc: 'assigned to evening turn-down inspection' },
+                  { time: '17:52', person: 'Duty Manager', room: 'Room 201', desc: 'verified villa turnover with photo QA' },
+                ].map((act, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2.5 rounded-lg bg-[#F3EEE3]/60 dark:bg-slate-800/40 border border-[#1C3035]/15 dark:border-slate-700 flex items-start gap-2.5"
+                  >
+                    <span className="text-[11px] font-mono font-bold text-slate-500 w-12 shrink-0 pt-0.5">
+                      {act.time}
+                    </span>
+                    <p className="text-xs font-medium text-[#1C3035] dark:text-slate-200 leading-snug">
+                      <span className="font-extrabold text-[#1C3035] dark:text-white">{act.person}</span>{' '}
+                      ({act.room}) {act.desc}.
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-[#1C3035]/10 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span>Real-time operations log</span>
+                <span className="text-[#5B9EA3]">✓ Live & Synchronized</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </ResortZone>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 04 / INTELLIGENCE — RESORT INTELLIGENCE
+          Managerial trends, SLA metrics, revenue optimization, and retention models.
+      ═══════════════════════════════════════════════════════════════════ */}
+      <ResortZone
+        id="zone-intelligence"
+        zoneKey="intelligence"
+        zoneNumber="04 / INTELLIGENCE"
+        zoneTitle="RESORT INTELLIGENCE"
+        description="Managerial trends, SLA metrics, revenue optimization, and retention models."
+        accentColor="#2D8CFF"
+        onZoneVisible={setActiveZone}
+      >
+        <div className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-6 sm:p-7 shadow-[5px_5px_0px_#1C3035] space-y-6">
         
         {/* Workspace Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-[#1C3035]/15 dark:border-slate-800 pb-4">
@@ -1814,7 +2011,8 @@ function DashboardPage() {
 
         </div>
 
-      </section>
+        </div>
+      </ResortZone>
 
     </div>
   )
