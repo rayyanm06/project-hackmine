@@ -17,12 +17,11 @@ import { useRoleStore } from '@/stores/role-store'
 
 interface ResortAuthCardProps {
   onSuccess: (user: AuthUser) => void
-  isExitingDown?: boolean
 }
 
 type AuthView = 'signin' | 'register' | 'forgot-password'
 
-export function ResortAuthCard({ onSuccess, isExitingDown = false }: ResortAuthCardProps) {
+export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
   const { setRole } = useRoleStore()
   const [authMode, setAuthMode] = useState<'guest' | 'staff'>('guest')
   const [currentView, setCurrentView] = useState<AuthView>('signin')
@@ -140,9 +139,7 @@ export function ResortAuthCard({ onSuccess, isExitingDown = false }: ResortAuthC
 
   return (
     <div
-      className={`relative w-full max-w-[460px] rounded-3xl bg-white/45 backdrop-blur-2xl backdrop-saturate-130 border border-white/70 p-7 sm:p-9 shadow-[0_24px_60px_-12px_rgba(23,43,58,0.18),0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.95)] transition-all duration-500 ${
-        isExitingDown ? 'animate-card-descend-daytime' : ''
-      }`}
+      className="relative w-full max-w-[460px] rounded-3xl bg-white/45 backdrop-blur-2xl backdrop-saturate-130 border border-white/70 p-7 sm:p-9 shadow-[0_24px_60px_-12px_rgba(23,43,58,0.18),0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.95)] transition-all duration-500"
     >
       {/* ── Sequence: Real Authentication Success ─────────────────── */}
       {successStage !== 'none' ? (

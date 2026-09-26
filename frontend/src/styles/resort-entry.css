@@ -153,8 +153,37 @@
   }
 }
 
-.animate-fade-in-up {
-  animation: fadeInUpGentle 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ── Login Page Slide-In & Choreography Animations ─────────── */
+@keyframes slideInFromLeft {
+  0% {
+    opacity: 0;
+    transform: translate3d(-100px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slideInFromRight {
+  0% {
+    opacity: 0;
+    transform: translate3d(100px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-login-left-slide {
+  animation: slideInFromLeft 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-login-right-slide {
+  animation: slideInFromRight 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 /* ── Luxury Scroll Reveal & Interaction Styles ───────────── */

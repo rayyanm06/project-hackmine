@@ -16,7 +16,7 @@ export function ResortEntryExperience({
 }: ResortEntryExperienceProps) {
   const [view, setView] = useState<'landing' | 'login'>(initialView)
   const [isTransitionActive, setIsTransitionActive] = useState(false)
-  const [isCardExiting, setIsCardExiting] = useState(false)
+  const [exitPhase, setExitPhase] = useState<'idle' | 'centering' | 'sliding-down'>('idle')
   const [authenticatedUser, setAuthenticatedUser] = useState<AuthUser | null>(null)
 
   // When user clicks "ENTER RESORT" on the Landing page
@@ -24,18 +24,26 @@ export function ResortEntryExperience({
     setView('login')
   }, [])
 
-  // When user completes authentication on the Auth Card
+  // When user completes authentication on the Auth Card:
+  // Choreography: Both sides move to center -> slide down together -> doors hold -> doors open -> interior -> dashboard
   const handleAuthSuccess = useCallback((user: AuthUser) => {
     setAuthenticatedUser(user)
-    setIsCardExiting(true)
 
-    // After card begins descending, trigger the full-screen grand double-doors transition
+    // Stage 1: Both sides move to center
+    setExitPhase('centering')
+
+    // Stage 2: Both sides slide down together
+    setTimeout(() => {
+      setExitPhase('sliding-down')
+    }, 650)
+
+    // Stage 3: Full-screen closed double-doors transition appears and holds
     setTimeout(() => {
       setIsTransitionActive(true)
-    }, 450)
+    }, 1200)
   }, [])
 
-  const isTransitioning = isCardExiting || isTransitionActive
+  const isTransitioning = exitPhase !== 'idle' || isTransitionActive
 
   return (
     <div
@@ -66,12 +74,16 @@ export function ResortEntryExperience({
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-white/35" />
           </div>
 
-          {/* Main Layout: Left branding + Right glass card (~60-70% horizontal position) */}
+          {/* Main Layout: Left branding + Right glass card */}
           <div className="relative z-10 w-full min-h-screen flex flex-col lg:flex-row items-center justify-between px-6 sm:px-10 lg:pl-[8vw] lg:pr-[10vw] py-10 lg:py-8 max-w-[1600px] mx-auto gap-10 lg:gap-12">
-            {/* ── LEFT SIDE: Elegant Luxury Resort Branding (Supporting Content) ── */}
+            {/* ── LEFT SIDE: Slides in from left on load, moves to center on login, slides down ── */}
             <div
-              className={`w-full lg:max-w-[480px] xl:max-w-[540px] flex flex-col items-center lg:items-start text-center lg:text-left space-y-5 transition-all duration-500 ${
-                isCardExiting ? 'opacity-0 -translate-y-4' : 'opacity-100 translate-y-0'
+              className={`w-full lg:max-w-[480px] xl:max-w-[540px] flex flex-col items-center lg:items-start text-center lg:text-left space-y-5 ${
+                exitPhase === 'idle'
+                  ? 'animate-login-left-slide'
+                  : exitPhase === 'centering'
+                  ? 'translate-x-0 lg:translate-x-[min(26vw,340px)] scale-[0.98] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]'
+                  : 'translate-x-0 lg:translate-x-[min(26vw,340px)] translate-y-[120vh] opacity-0 scale-90 transition-all duration-750 ease-[cubic-bezier(0.4,0,0.2,1)]'
               }`}
             >
               {/* Eyebrow */}
@@ -102,11 +114,18 @@ export function ResortEntryExperience({
               </div>
             </div>
 
-            {/* ── RIGHT SIDE: Frosted Architectural Glass Login Card ── */}
-            <div className="w-full lg:w-auto flex justify-center lg:justify-end shrink-0">
+            {/* ── RIGHT SIDE: Slides in from right on load, moves to center on login, slides down ── */}
+            <div
+              className={`w-full lg:w-auto flex justify-center lg:justify-end shrink-0 ${
+                exitPhase === 'idle'
+                  ? 'animate-login-right-slide'
+                  : exitPhase === 'centering'
+                  ? 'translate-x-0 lg:-translate-x-[min(26vw,340px)] scale-[0.98] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]'
+                  : 'translate-x-0 lg:-translate-x-[min(26vw,340px)] translate-y-[120vh] opacity-0 scale-90 transition-all duration-750 ease-[cubic-bezier(0.4,0,0.2,1)]'
+              }`}
+            >
               <ResortAuthCard
                 onSuccess={handleAuthSuccess}
-                isExitingDown={isCardExiting}
               />
             </div>
           </div>
