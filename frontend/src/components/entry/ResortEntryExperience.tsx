@@ -70,13 +70,13 @@ export function ResortEntryExperience({
           {/* Background image during auth with luxury reception interior */}
           <div className="fixed inset-0 pointer-events-none z-0">
             <img
-              src="/images/resort-reception.png"
+              src="/login-reception-bg.png"
               alt="Smart Resort 360 Reception"
-              className="w-full h-full object-cover object-center filter brightness-[0.96] contrast-[1.03]"
+              className="w-full h-full object-cover object-center filter brightness-[0.98] contrast-[1.02]"
             />
-            {/* Subtle atmospheric vignette preserving the luxury reception architecture & warm lighting */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-black/30" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/25" />
+            {/* Subtle atmospheric gradient preserving reception architecture while enhancing left text readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/25 pointer-events-none" />
           </div>
 
           {/* Main Layout: Left branding + Right glass card */}
@@ -92,7 +92,7 @@ export function ResortEntryExperience({
               }}
             >
               {/* Eyebrow */}
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 shadow-xs">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/35 backdrop-blur-md border border-white/20 shadow-xs">
                 <span className="w-2 h-2 rounded-full bg-[#2D8CFF] shadow-[0_0_8px_#2D8CFF]" />
                 <span className="text-[12px] sm:text-[14px] font-bold tracking-[0.24em] text-[#2D8CFF] uppercase font-sans">
                   Smart Resort 360
@@ -106,14 +106,14 @@ export function ResortEntryExperience({
               </h1>
 
               {/* Supporting Text (18–20px) */}
-              <p className="text-[#E2E8F0] text-[18px] lg:text-[20px] font-medium leading-relaxed max-w-lg drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+              <p className="text-[#F1F5F9] text-[18px] lg:text-[20px] font-medium leading-relaxed max-w-lg drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
                 Seamless guest experiences, smarter resort operations.
               </p>
 
               {/* Decorative Luxury Divider & Pillars */}
               <div className="pt-2 flex flex-col items-center lg:items-start space-y-3.5">
                 <div className="h-[2.5px] w-20 bg-[#2D8CFF] rounded-full shadow-[0_0_10px_rgba(45,140,255,0.6)]" />
-                <div className="text-[12px] sm:text-[13px] font-semibold tracking-[0.16em] text-[#CBD5E1] uppercase drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
+                <div className="text-[12px] sm:text-[13px] font-semibold tracking-[0.16em] text-[#E2E8F0] uppercase drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
                   Guest Experience • Operations • Intelligence
                 </div>
               </div>

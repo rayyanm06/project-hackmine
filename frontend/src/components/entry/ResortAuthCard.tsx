@@ -122,7 +122,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
 
   return (
     <div
-      className="relative w-full max-w-[520px] rounded-3xl bg-white/60 hover:bg-white/[0.63] backdrop-blur-2xl backdrop-saturate-150 border border-white/80 p-8 sm:p-9 md:p-10 shadow-[0_24px_64px_-12px_rgba(15,23,42,0.35),0_0_0_1px_rgba(255,255,255,0.7),0_8px_32px_rgba(45,140,255,0.15)] transition-all duration-300"
+      className="relative w-full max-w-[520px] rounded-3xl bg-white/55 backdrop-blur-2xl backdrop-saturate-140 border border-white/80 p-8 sm:p-10 shadow-[0_24px_64px_-12px_rgba(45,140,255,0.14),0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.95)] transition-all duration-500"
     >
       {currentView === 'forgot-password' ? (
         /* ── View: Password Reset ────────────────────────────────── */
@@ -195,12 +195,12 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
       ) : (
         /* ── Main View: Sign In / Create Account ──────────────────── */
         <div className="space-y-6">
-          {/* Header without duplicate logo or eyebrow */}
+          {/* Header without duplicate logo or brand */}
           <div className="text-center space-y-1.5 pb-1">
-            <h2 className="text-3xl sm:text-[36px] font-bold tracking-tight text-[#172B3A]">
+            <h2 className="text-3xl sm:text-[34px] font-bold tracking-tight text-[#172B3A]">
               {currentView === 'register' ? 'Create your account' : 'Sign in'}
             </h2>
-            <p className="text-[#556987] text-[16px] font-medium">
+            <p className="text-[#556987] text-[15px] font-medium">
               {currentView === 'register'
                 ? 'Start your Smart Resort 360 experience.'
                 : 'Access your Smart Resort 360 experience.'}
