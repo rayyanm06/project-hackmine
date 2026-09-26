@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
+import { Route as LandingRouteImport } from './routes/landing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutIndexRouteImport } from './routes/_layout.index'
 import { Route as LayoutAuditRouteImport } from './routes/_layout.audit'
@@ -27,6 +28,11 @@ import { Route as LayoutVerificationRouteImport } from './routes/_layout.verific
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LandingRoute = LandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -102,6 +108,7 @@ const LayoutVerificationRoute = LayoutVerificationRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
+  '/landing': typeof LandingRoute
   '/login': typeof LoginRoute
   '/audit': typeof LayoutAuditRoute
   '/cancellation-risk': typeof LayoutCancellationRiskRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/verification': typeof LayoutVerificationRoute
 }
 export interface FileRoutesByTo {
+  '/landing': typeof LandingRoute
   '/login': typeof LoginRoute
   '/audit': typeof LayoutAuditRoute
   '/cancellation-risk': typeof LayoutCancellationRiskRoute
@@ -135,6 +143,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/landing': typeof LandingRoute
   '/login': typeof LoginRoute
   '/_layout/audit': typeof LayoutAuditRoute
   '/_layout/cancellation-risk': typeof LayoutCancellationRiskRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/landing'
     | '/login'
     | '/audit'
     | '/cancellation-risk'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/verification'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/landing'
     | '/login'
     | '/audit'
     | '/cancellation-risk'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_layout'
+    | '/landing'
     | '/login'
     | '/_layout/audit'
     | '/_layout/cancellation-risk'
@@ -204,6 +216,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
+  LandingRoute: typeof LandingRoute
   LoginRoute: typeof LoginRoute
 }
 
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof LayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/landing': {
+      id: '/landing'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -354,6 +374,7 @@ const LayoutRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
+  LandingRoute: LandingRoute,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport

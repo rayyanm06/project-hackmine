@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ResortEntryExperience } from '@/components/entry/ResortEntryExperience'
+import { useEffect } from 'react'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -8,13 +8,10 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   const navigate = useNavigate()
 
-  return (
-    <ResortEntryExperience
-      initialView="login"
-      onEntered={() => {
-        sessionStorage.setItem('resort_entered', 'true')
-        navigate({ to: '/' })
-      }}
-    />
-  )
+  useEffect(() => {
+    navigate({ to: '/', search: { view: 'login' }, replace: true })
+  }, [navigate])
+
+  return null
 }
+

@@ -15,52 +15,79 @@ export function ResortEntryExperience({
   onEntered,
 }: ResortEntryExperienceProps) {
   const [view, setView] = useState<'landing' | 'login'>(initialView)
-  const [isTransitionActive, setIsTransitionActive] = useState(false)
-  const [exitPhase, setExitPhase] = useState<'idle' | 'card-to-center' | 'center-hold' | 'sliding-down'>('idle')
+  const [transitionState, setTransitionState] = useState<
+    'login' | 'card-exiting' | 'card-exited' | 'dashboard-revealing' | 'dashboard'
+  >('login')
+  const [exitPhase, setExitPhase] = useState<
+    'idle' | 'card-to-center' | 'center-hold' | 'sliding-down' | 'exited'
+  >('idle')
 
   // When user clicks "ENTER RESORT" on the Landing page
   const handleStartAuth = useCallback(() => {
     setView('login')
   }, [])
 
-  // Post-Login Timeline:
-  // 1. Login card moves from right to center (passes in front of left text, hiding it behind card)
-  // 2. Card holds briefly in the center (0.35s)
-  // 3. Card begins sliding down (1150ms)
-  // 4. Door scene begins establishing itself behind descending card at 1300ms (150ms into descent)
-  // 5. Card exits viewport by 1950ms, doors fully established and closed, then hold for 1.0s before opening
+  // Post-Login Sequential Timeline:
+  // PHASE 1 — EXISTING CARD ANIMATION:
+  // Step 1: Login card glides to center (0 - 800ms)
+  // Step 2: Center hold (800ms - 1150ms)
+  // Step 3: Login card slides straight down with existing luminous trail (1150ms - 2100ms)
+  //
+  // PHASE 2 — CARD COMPLETELY GONE & DASHBOARD WAITS:
+  // Step 4: Card AND luminous trail completely leave viewport by 2150ms
+  // Viewport is empty of card and trail. Dashboard sits waiting at translateY(100%).
+  // Short handoff moment (150ms: 2150ms - 2300ms)
+  //
+  // PHASE 3 — DASHBOARD REVEAL:
+  // Step 5: At 2300ms, start dashboard reveal:
+  // - Soft white / cool-blue daylight rises from bottom
+  // - Dashboard physically moves UP from below viewport (translateY(100%) -> translateY(0))
+  // - Dashboard settles cleanly into resting position
+  // - Light dissolves, then onEntered() completes the transition
   const handleAuthSuccess = useCallback((_user: AuthUser) => {
-    // Stage 1: Login card glides to center, covering the left text
+    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (isReduced) {
+      sessionStorage.setItem('resort_entered', 'true')
+      onEntered()
+      return
+    }
+
+    // Step 1: Login card glides to center, covering the left text
+    setTransitionState('card-exiting')
     setExitPhase('card-to-center')
 
-    // Stage 2: Center hold (settles briefly in the center)
+    // Step 2: Center hold (settles briefly in the center)
     setTimeout(() => {
       setExitPhase('center-hold')
     }, 800)
 
-    // Stage 3: Login card slides straight down off the screen
+    // Step 3: Login card slides straight down off the screen (200vh descent with trail)
     setTimeout(() => {
       setExitPhase('sliding-down')
     }, 1150)
 
-    // Stage 4: Full-screen closed resort doors begin fading in behind the descending card (0.15s into descent)
+    // Step 4: Card AND luminous trail completely leave the viewport
     setTimeout(() => {
-      setIsTransitionActive(true)
-    }, 1300)
-  }, [])
+      setExitPhase('exited')
+      setTransitionState('card-exited')
+    }, 2150)
 
-  const isTransitioning = exitPhase !== 'idle' || isTransitionActive
+    // Step 5: After short handoff moment, start dashboard reveal animation
+    setTimeout(() => {
+      setTransitionState('dashboard-revealing')
+    }, 2300)
+  }, [onEntered])
+
+  const isTransitioning = transitionState !== 'login'
 
   return (
     <div
-      className={`relative w-full min-h-screen ${
-        isTransitionActive ? 'bg-transparent' : 'bg-[#FAF9F6]'
-      } ${
+      className={`relative w-full min-h-screen bg-[#FAF9F6] ${
         view === 'landing' && !isTransitioning ? 'overflow-y-auto' : 'overflow-hidden select-none'
       }`}
     >
-      {/* Refined Custom Cursor active only during entry experience before door transition */}
-      <CustomCursor active={!isTransitionActive} />
+      {/* Refined Custom Cursor active only during entry experience before exit */}
+      <CustomCursor active={exitPhase === 'idle'} />
 
       {/* ── View 1: Daytime Landing Page ────────────────────────── */}
       {view === 'landing' && !isTransitioning && (
@@ -73,7 +100,9 @@ export function ResortEntryExperience({
           {/* Background image during auth with luxury reception interior */}
           <div
             className={`fixed inset-0 pointer-events-none z-0 transition-opacity duration-700 ${
-              isTransitionActive ? 'opacity-0' : 'opacity-100'
+              transitionState === 'dashboard-revealing' || transitionState === 'dashboard'
+                ? 'opacity-0'
+                : 'opacity-100'
             }`}
           >
             <img
@@ -126,14 +155,16 @@ export function ResortEntryExperience({
               </div>
             </div>
 
-            {/* ── RIGHT SIDE: The Main Moving Object (Moves to center, covers left text, slides down) ── */}
+            {/* ── RIGHT SIDE: The Main Moving Object (Moves to center, covers left text, slides down completely off screen) ── */}
             <div
               className={`relative w-full lg:w-auto flex justify-center lg:justify-end shrink-0 z-50 ${
                 exitPhase === 'idle'
                   ? 'animate-login-right-slide'
                   : exitPhase === 'card-to-center' || exitPhase === 'center-hold'
                   ? 'translate-x-0 lg:-translate-x-[calc(42vw-270px)] translate-y-0 transition-transform duration-800 ease-[cubic-bezier(0.25,1,0.5,1)]'
-                  : 'translate-x-0 lg:-translate-x-[calc(42vw-270px)] translate-y-[125vh] transition-transform duration-800 ease-[cubic-bezier(0.4,0,0.2,1)]'
+                  : exitPhase === 'sliding-down'
+                  ? 'translate-x-0 lg:-translate-x-[calc(42vw-270px)] translate-y-[200vh] transition-transform duration-[950ms] ease-[cubic-bezier(0.32,0,0.67,0)]'
+                  : 'translate-x-0 lg:-translate-x-[calc(42vw-270px)] translate-y-[200vh] opacity-0 pointer-events-none'
               }`}
             >
               {/* Luminous upward optical trail attached to the top of the downward-moving card */}
@@ -165,13 +196,15 @@ export function ResortEntryExperience({
         </div>
       )}
 
-      {/* ── View 3: Cinematic Daytime Transition (Resort Doors Reveal & Open) */}
+      {/* ── View 3: Soft Daylight & Dashboard Entrance Transition ───── */}
       <ResortTransition
-        active={isTransitionActive}
+        active={transitionState === 'dashboard-revealing'}
         onComplete={() => {
+          setTransitionState('dashboard')
           onEntered()
         }}
       />
     </div>
   )
 }
+
