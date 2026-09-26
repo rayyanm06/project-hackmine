@@ -75,19 +75,19 @@ export function CustomCursor({ active = true }: { active?: boolean }) {
         cursorRef.current.style.transform = `scale(1.22) rotate(45deg)`
         ringRef.current.style.width = '36px'
         ringRef.current.style.height = '36px'
-        ringRef.current.style.borderColor = 'rgba(61, 90, 69, 0.75)'
-        ringRef.current.style.backgroundColor = 'rgba(61, 90, 69, 0.08)'
+        ringRef.current.style.borderColor = 'rgba(30, 58, 138, 0.75)'
+        ringRef.current.style.backgroundColor = 'rgba(37, 99, 235, 0.08)'
       } else if (mode === 'interactive') {
         cursorRef.current.style.transform = `scale(1.12) rotate(15deg)`
         ringRef.current.style.width = '30px'
         ringRef.current.style.height = '30px'
-        ringRef.current.style.borderColor = 'rgba(61, 90, 69, 0.55)'
-        ringRef.current.style.backgroundColor = 'rgba(61, 90, 69, 0.04)'
+        ringRef.current.style.borderColor = 'rgba(30, 58, 138, 0.55)'
+        ringRef.current.style.backgroundColor = 'rgba(37, 99, 235, 0.04)'
       } else {
         cursorRef.current.style.transform = `scale(1.0) rotate(0deg)`
         ringRef.current.style.width = '24px'
         ringRef.current.style.height = '24px'
-        ringRef.current.style.borderColor = 'rgba(61, 90, 69, 0.35)'
+        ringRef.current.style.borderColor = 'rgba(30, 58, 138, 0.35)'
         ringRef.current.style.backgroundColor = 'transparent'
       }
     }
@@ -137,25 +137,25 @@ export function CustomCursor({ active = true }: { active?: boolean }) {
 
   return (
     <>
-      {/* ── Subtle Micro Trail Dot (Soft sage) ─── */}
+      {/* ── Subtle Micro Trail Dot (Coastal blue) ─── */}
       <div
         ref={trailRef}
-        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99997] w-1.5 h-1.5 rounded-full bg-[#3D5A45] opacity-0 transition-opacity duration-300"
+        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99997] w-1.5 h-1.5 rounded-full bg-[#2563EB] opacity-0 transition-opacity duration-300"
         style={{
-          boxShadow: '0 0 4px rgba(61, 90, 69, 0.3)',
+          boxShadow: '0 0 4px rgba(37, 99, 235, 0.35)',
         }}
       />
 
       {/* ── Outer Concentric Compass Dial Ring ─────────────────── */}
       <div
         ref={ringRef}
-        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99998] w-6 h-6 rounded-full border border-[#3D5A45]/35 opacity-0 transition-[width,height,border-color,background-color] duration-200 ease-out"
+        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99998] w-6 h-6 rounded-full border border-[#2563EB]/35 opacity-0 transition-[width,height,border-color,background-color] duration-200 ease-out"
         style={{
-          boxShadow: '0 0 8px rgba(0, 0, 0, 0.05), inset 0 0 4px rgba(61, 90, 69, 0.08)',
+          boxShadow: '0 0 8px rgba(0, 0, 0, 0.05), inset 0 0 4px rgba(37, 99, 235, 0.08)',
         }}
       />
 
-      {/* ── Refined Luxury Resort Compass Symbol (Center Pointer) ── */}
+      {/* ── Refined Coastal Resort Compass Symbol (Center Pointer) ── */}
       <div
         ref={cursorRef}
         className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99999] opacity-0 transition-[transform,opacity] duration-150 ease-out"
@@ -164,7 +164,7 @@ export function CustomCursor({ active = true }: { active?: boolean }) {
           className="w-5 h-5 filter"
           style={{
             filter:
-              'drop-shadow(0 1px 1.5px rgba(28, 35, 33, 0.35)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.9))',
+              'drop-shadow(0 1px 1.5px rgba(15, 23, 42, 0.35)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.9))',
           }}
           viewBox="0 0 24 24"
         >
@@ -174,31 +174,31 @@ export function CustomCursor({ active = true }: { active?: boolean }) {
             cy="12"
             r="8.5"
             fill="none"
-            stroke="#3D5A45"
+            stroke="#2563EB"
             strokeWidth="0.65"
             strokeDasharray="1.2 2.2"
             opacity="0.45"
           />
 
-          {/* North Point (Two-Tone Sage / Eucalyptus Shading) */}
-          <path d="M12 2.5 L12 12 L10.8 10.2 Z" fill="#5A7B64" />
-          <path d="M12 2.5 L13.2 10.2 L12 12 Z" fill="#25372B" />
+          {/* North Point (Two-Tone Sky Blue / Coastal Navy Shading) */}
+          <path d="M12 2.5 L12 12 L10.8 10.2 Z" fill="#38BDF8" />
+          <path d="M12 2.5 L13.2 10.2 L12 12 Z" fill="#1E3A8A" />
 
           {/* South Point */}
-          <path d="M12 21.5 L12 12 L13.2 13.8 Z" fill="#5A7B64" />
-          <path d="M12 21.5 L10.8 13.8 L12 12 Z" fill="#25372B" />
+          <path d="M12 21.5 L12 12 L13.2 13.8 Z" fill="#38BDF8" />
+          <path d="M12 21.5 L10.8 13.8 L12 12 Z" fill="#1E3A8A" />
 
           {/* East Point */}
-          <path d="M21.5 12 L12 12 L13.8 10.8 Z" fill="#5A7B64" />
-          <path d="M21.5 12 L13.8 13.2 L12 12 Z" fill="#25372B" />
+          <path d="M21.5 12 L12 12 L13.8 10.8 Z" fill="#38BDF8" />
+          <path d="M21.5 12 L13.8 13.2 L12 12 Z" fill="#1E3A8A" />
 
           {/* West Point */}
-          <path d="M2.5 12 L12 12 L10.8 13.8 Z" fill="#5A7B64" />
-          <path d="M2.5 12 L10.2 10.8 L12 12 Z" fill="#25372B" />
+          <path d="M2.5 12 L12 12 L10.8 13.8 Z" fill="#38BDF8" />
+          <path d="M2.5 12 L10.2 10.8 L12 12 Z" fill="#1E3A8A" />
 
           {/* Center Precision Pivot & Jewel */}
-          <circle cx="12" cy="12" r="2.2" fill="#FAF9F6" stroke="#25372B" strokeWidth="0.75" />
-          <circle cx="12" cy="12" r="1.1" fill="#3D5A45" />
+          <circle cx="12" cy="12" r="2.2" fill="#F0F9FF" stroke="#1E3A8A" strokeWidth="0.75" />
+          <circle cx="12" cy="12" r="1.1" fill="#2563EB" />
         </svg>
       </div>
     </>

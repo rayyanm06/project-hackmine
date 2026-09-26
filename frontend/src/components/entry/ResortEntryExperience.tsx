@@ -59,9 +59,9 @@ export function ResortEntryExperience({
             <img
               src="/images/resort-day-hero.jpg"
               alt="Smart Resort 360"
-              className="w-full h-full object-cover object-center filter brightness-[1.0] contrast-[0.98] blur-[2px]"
+              className="w-full h-full object-cover object-center filter brightness-[1.02] contrast-[1.01] blur-[1px]"
             />
-            <div className="absolute inset-0 bg-[#FAF9F6]/75 backdrop-blur-[3px]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/15 via-white/15 to-sky-950/10" />
           </div>
 
           {/* Authentication Card (centered, descends downward when isCardExiting is true) */}

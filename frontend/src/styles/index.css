@@ -125,7 +125,7 @@
 
   /* ── Font classes (used by FontProvider on <html>) ─── */
   .font-cormorant {
-    font-family: var(--font-cormorant) !important;
+    font-family: var(--font-inter) !important;
   }
 
   .font-inter body,
