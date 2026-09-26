@@ -134,97 +134,139 @@ const CANCELLATION_RISK_DATA = [
   { tier: 'High Risk (>60%)', bookings: 2, percentage: 10, fill: '#C96B56' },
 ]
 
-// ── Resort Reference Visual Asset Dictionary (Staff Desk) ───────────────────
-export interface DeskReference {
-  image: string
-  tag: string
-  title: string
-  caption: string
-  path: string
-}
-
-const DEFAULT_DESK_REFERENCE: DeskReference = {
-  image: '/assets/resort-reference/resort.jpg',
-  tag: 'CONNECTED PROPERTY',
-  title: 'SMART RESORT 360',
-  caption: 'One property. One connected operation.',
-  path: '/resort-360',
-}
-
-const DESK_REFERENCES: Record<string, DeskReference> = {
-  'rooms-360': {
-    image: '/assets/resort-reference/rooms.jpg',
-    tag: 'GUEST SUITES',
-    title: 'ROOMS 360',
-    caption: 'Explore room readiness & virtual inspection.',
-    path: '/rooms-360',
-  },
-  'complaints': {
-    image: '/assets/resort-reference/concierge.jpg',
-    tag: 'CONCIERGE & DESK',
-    title: 'GUEST SERVICE',
-    caption: 'Respond to guest needs quickly.',
-    path: '/complaints',
-  },
-  'tasks': {
-    image: '/assets/resort-reference/operations.jpg',
-    tag: 'FLOOR DISPATCH',
-    title: 'RESORT OPERATIONS',
-    caption: 'Keep service moving.',
-    path: '/tasks',
-  },
-  'staff': {
-    image: '/assets/resort-reference/staff.jpg',
-    tag: 'HOSPITALITY TEAM',
-    title: 'STAFF',
-    caption: 'See who is on duty.',
-    path: '/staff',
-  },
-  'verification': {
-    image: '/assets/resort-reference/inspection.jpg',
-    tag: 'QUALITY CONTROL',
-    title: 'QUALITY CHECK',
-    caption: 'Verify completed work.',
-    path: '/verification',
-  },
-  'pricing': {
-    image: '/assets/resort-reference/resort.jpg',
-    tag: 'REVENUE STRATEGY',
-    title: 'ROOM RATES',
-    caption: "Monitor the property's pricing position.",
-    path: '/pricing',
-  },
-  'cancellation-risk': {
-    image: '/assets/resort-reference/concierge.jpg',
-    tag: 'RESERVATIONS DESK',
-    title: 'BOOKINGS',
-    caption: 'Identify reservations that need attention.',
-    path: '/cancellation-risk',
-  },
-  'recommendations': {
-    image: '/assets/resort-reference/operations.jpg',
-    tag: 'TAILORED HOSPITALITY',
-    title: 'GUEST EXPERIENCE',
-    caption: 'Understand guest preferences.',
-    path: '/recommendations',
-  },
-  'insights': {
-    image: '/assets/resort-reference/reports.jpg',
-    tag: 'PROPERTY BENCHMARKS',
-    title: 'RESORT REPORTS',
-    caption: 'Understand how the property is performing.',
-    path: '/insights',
-  },
-  'audit': {
-    image: '/assets/resort-reference/staff.jpg',
-    tag: 'GOVERNANCE LOG',
-    title: 'OPERATIONS RECORD',
-    caption: 'Review completed activity.',
-    path: '/audit',
-  },
-}
-
 type AnalyticsTab = 'occupancy' | 'readiness' | 'requests' | 'flow' | 'rates' | 'cancellations'
+
+// ── Staff Desk & Resort Reference Items ─────────────────────────────────────
+const DEFAULT_REFERENCE = {
+  id: 'default',
+  image: '/assets/resort-reference/resort.jpg',
+  captionTitle: 'SMART RESORT 360',
+  captionText: 'ONE PROPERTY. ONE CONNECTED OPERATION.',
+  category: 'PROPERTY ARCHITECTURE',
+}
+
+const STAFF_DESK_ITEMS = [
+  {
+    id: 'rooms',
+    label: 'Rooms 360',
+    path: '/rooms-360',
+    icon: Camera,
+    note: 'Virtual room inspection',
+    color: 'text-[#5B9EA3]',
+    image: '/assets/resort-reference/rooms.jpg',
+    captionTitle: 'ROOMS 360',
+    captionText: 'Explore room readiness & virtual inspection.',
+    category: 'ACCOMMODATION',
+  },
+  {
+    id: 'requests',
+    label: 'Guest Requests',
+    path: '/complaints',
+    icon: ClipboardList,
+    note: '8 active guest issues',
+    color: 'text-[#C96B56]',
+    image: '/assets/resort-reference/concierge.jpg',
+    captionTitle: 'GUEST SERVICE',
+    captionText: 'Respond to guest needs quickly.',
+    category: 'GUEST CARE',
+  },
+  {
+    id: 'tasks',
+    label: 'Tasks to Do',
+    path: '/tasks',
+    icon: CheckSquare,
+    note: '4 active shift dispatches',
+    color: 'text-[#2D8CFF]',
+    image: '/assets/resort-reference/operations.jpg',
+    captionTitle: 'RESORT OPERATIONS',
+    captionText: 'Keep service moving.',
+    category: 'FACILITIES',
+  },
+  {
+    id: 'staff',
+    label: 'Staff on Duty',
+    path: '/staff',
+    icon: Users,
+    note: '4 active roster on shift',
+    color: 'text-[#78AAA0]',
+    image: '/assets/resort-reference/staff.jpg',
+    captionTitle: 'STAFF',
+    captionText: 'See who is on duty.',
+    category: 'HOSPITALITY TEAM',
+  },
+  {
+    id: 'verification',
+    label: 'Check Completed Work',
+    path: '/verification',
+    icon: ShieldCheck,
+    note: 'Photo QA proof sign-off',
+    color: 'text-emerald-700',
+    image: '/assets/resort-reference/inspection.jpg',
+    captionTitle: 'QUALITY CHECK',
+    captionText: 'Verify completed work.',
+    category: 'STANDARDS & QA',
+  },
+  {
+    id: 'rates',
+    label: 'Room Rates',
+    path: '/pricing',
+    icon: TrendingUp,
+    note: 'Competitor benchmarks',
+    color: 'text-amber-700',
+    image: '/images/resort-entrance.jpg',
+    captionTitle: 'ROOM RATES',
+    captionText: "Monitor the property's pricing position.",
+    category: 'REVENUE STRATEGY',
+  },
+  {
+    id: 'cancellations',
+    label: 'Bookings at Risk',
+    path: '/cancellation-risk',
+    icon: BrainCircuit,
+    note: 'Retention intelligence',
+    color: 'text-[#C96B56]',
+    image: '/images/resort-day-entrance.jpg',
+    captionTitle: 'BOOKINGS',
+    captionText: 'Identify reservations that need attention.',
+    category: 'GUEST RETENTION',
+  },
+  {
+    id: 'preferences',
+    label: 'Guest Preferences',
+    path: '/recommendations',
+    icon: Sparkles,
+    note: 'Semantic matching',
+    color: 'text-[#5B9EA3]',
+    image: '/images/resort-room-day.jpg',
+    captionTitle: 'GUEST EXPERIENCE',
+    captionText: 'Understand guest preferences.',
+    category: 'PERSONALIZATION',
+  },
+  {
+    id: 'reports',
+    label: 'Resort Reports',
+    path: '/insights',
+    icon: ChartNoAxesCombined,
+    note: 'SLA & efficiency metrics',
+    color: 'text-[#2D8CFF]',
+    image: '/assets/resort-reference/reports.jpg',
+    captionTitle: 'RESORT REPORTS',
+    captionText: 'Understand how the property is performing.',
+    category: 'PERFORMANCE',
+  },
+  {
+    id: 'audit',
+    label: 'Audit Trail',
+    path: '/audit',
+    icon: History,
+    note: 'Tamper-proof activity logs',
+    color: 'text-[#1C3035]',
+    image: '/images/resort-hero.jpg',
+    captionTitle: 'OPERATIONS RECORD',
+    captionText: 'Review completed activity.',
+    category: 'GOVERNANCE & LOG',
+  },
+]
 
 function DashboardPage() {
   const navigate = useNavigate()
@@ -234,37 +276,54 @@ function DashboardPage() {
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>('occupancy')
   const [activeWingFilter, setActiveWingFilter] = useState<string>('all')
 
-  // Staff Desk Reference Hover State & Debounce Timer
-  const [activeDeskRef, setActiveDeskRef] = useState<DeskReference>(DEFAULT_DESK_REFERENCE)
-  const [hoveredDeskId, setHoveredDeskId] = useState<string | null>(null)
-  const deskTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const handleDeskItemHover = (id: string) => {
-    if (deskTimerRef.current) {
-      clearTimeout(deskTimerRef.current)
-      deskTimerRef.current = null
-    }
-    setHoveredDeskId(id)
-    if (DESK_REFERENCES[id]) {
-      setActiveDeskRef(DESK_REFERENCES[id])
-    }
-  }
-
-  const handleDeskItemLeave = () => {
-    if (deskTimerRef.current) {
-      clearTimeout(deskTimerRef.current)
-    }
-    deskTimerRef.current = setTimeout(() => {
-      setHoveredDeskId(null)
-      setActiveDeskRef(DEFAULT_DESK_REFERENCE)
-    }, 950)
-  }
+  // Staff Desk & Resort Reference Interactive State
+  const [activeReference, setActiveReference] = useState(DEFAULT_REFERENCE)
+  const [hoveredFeatureId, setHoveredFeatureId] = useState<string | null>(null)
+  const [isFading, setIsFading] = useState(false)
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     return () => {
-      if (deskTimerRef.current) clearTimeout(deskTimerRef.current)
+      if (leaveTimerRef.current) {
+        clearTimeout(leaveTimerRef.current)
+      }
     }
   }, [])
+
+  const handleFeatureHover = (feature: typeof STAFF_DESK_ITEMS[0]) => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current)
+      leaveTimerRef.current = null
+    }
+    setHoveredFeatureId(feature.id)
+    if (activeReference.id !== feature.id) {
+      setIsFading(true)
+      setTimeout(() => {
+        setActiveReference({
+          id: feature.id,
+          image: feature.image,
+          captionTitle: feature.captionTitle,
+          captionText: feature.captionText,
+          category: feature.category,
+        })
+        setIsFading(false)
+      }, 150)
+    }
+  }
+
+  const handleDeskMouseLeave = () => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current)
+    }
+    leaveTimerRef.current = setTimeout(() => {
+      setHoveredFeatureId(null)
+      setIsFading(true)
+      setTimeout(() => {
+        setActiveReference(DEFAULT_REFERENCE)
+        setIsFading(false)
+      }, 150)
+    }, 1000) // 1000ms grace period before gently returning to default
+  }
 
   useEffect(() => {
     const unsub = AuthService.subscribeToAuthState((user) => {
@@ -1032,7 +1091,7 @@ function DashboardPage() {
 
       {/* ═══════════════════════════════════════════════════════════════════
           ZONE 6: STAFF DESK + RESORT REFERENCE
-          Two-part operational console: Navigation on Left, Interactive Resort Reference on Right
+          Two-part experience: Left Navigation/Actions + Right Dedicated Visual Reference Panel
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="space-y-4">
         <div className="flex items-center justify-between border-b-2 border-[#1C3035]/20 dark:border-slate-800 pb-3">
@@ -1041,18 +1100,18 @@ function DashboardPage() {
               Staff Desk & Operations Console
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
-              Operational navigation rail paired with live physical resort reference imagery.
+              Fast navigation rail connected to real-time physical resort reference imagery.
             </p>
           </div>
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            Hospitality Reference
+            Hospitality Console
           </span>
         </div>
 
-        {/* ── Two-Part Visual Experience (Left: Desk, Right: Resort Reference) ── */}
+        {/* ── Two-Part Visual Composition ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
-          {/* LEFT: STAFF DESK & QUICK ACTIONS (7 cols on lg) */}
+          {/* LEFT PART: Quick Action Dock + 10 Feature Rails (7 cols on lg) */}
           <div className="lg:col-span-7 flex flex-col justify-between space-y-4">
             
             {/* Quick Action Dock (Verbs First) */}
@@ -1099,67 +1158,56 @@ function DashboardPage() {
                 className="rounded-lg text-xs font-black border-2 border-[#1C3035] bg-[#FBF9F4] text-[#1C3035] hover:bg-[#D8C7AA]/40 shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer gap-1.5"
               >
                 <ShieldCheck className="size-3.5 text-emerald-700" />
-                <span>+ Verify Work</span>
+                <span>+ Check Completed Work</span>
               </Button>
             </div>
 
-            {/* 10 Operational Rails (Hover & Focus reactive) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {[
-                { id: 'rooms-360', label: 'Rooms 360', path: '/rooms-360', icon: Camera, note: 'Virtual room directory', color: 'text-[#5B9EA3]' },
-                { id: 'complaints', label: 'Guest Requests', path: '/complaints', icon: ClipboardList, note: '8 active issues', color: 'text-[#C96B56]' },
-                { id: 'tasks', label: 'Tasks to Do', path: '/tasks', icon: CheckSquare, note: '4 dispatched', color: 'text-[#2D8CFF]' },
-                { id: 'staff', label: 'Staff on Duty', path: '/staff', icon: Users, note: '4 active roster', color: 'text-[#78AAA0]' },
-                { id: 'verification', label: 'Check Completed Work', path: '/verification', icon: ShieldCheck, note: 'Photo QA sign-off', color: 'text-emerald-700' },
-                { id: 'pricing', label: 'Room Rates', path: '/pricing', icon: TrendingUp, note: 'Competitor benchmarks', color: 'text-amber-700' },
-                { id: 'cancellation-risk', label: 'Bookings at Risk', path: '/cancellation-risk', icon: BrainCircuit, note: 'Retention steps', color: 'text-[#C96B56]' },
-                { id: 'recommendations', label: 'Guest Preferences', path: '/recommendations', icon: Sparkles, note: 'Semantic matching', color: 'text-[#5B9EA3]' },
-                { id: 'insights', label: 'Resort Reports', path: '/insights', icon: ChartNoAxesCombined, note: 'SLA & efficiency', color: 'text-[#2D8CFF]' },
-                { id: 'audit', label: 'Audit Trail', path: '/audit', icon: History, note: 'Governance logs', color: 'text-[#1C3035]' },
-              ].map((action) => {
-                const Icon = action.icon
-                const isHovered = hoveredDeskId === action.id
-
+            {/* 10 Feature Navigation Rails (2 Columns of 5) */}
+            <div
+              onMouseLeave={handleDeskMouseLeave}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            >
+              {STAFF_DESK_ITEMS.map((item) => {
+                const Icon = item.icon
+                const isHovered = hoveredFeatureId === item.id
                 return (
                   <div
-                    key={action.id}
+                    key={item.id}
                     role="button"
                     tabIndex={0}
-                    onMouseEnter={() => handleDeskItemHover(action.id)}
-                    onMouseLeave={handleDeskItemLeave}
-                    onFocus={() => handleDeskItemHover(action.id)}
-                    onBlur={handleDeskItemLeave}
-                    onTouchStart={() => handleDeskItemHover(action.id)}
-                    onClick={() => navigate({ to: action.path })}
+                    onMouseEnter={() => handleFeatureHover(item)}
+                    onFocus={() => handleFeatureHover(item)}
+                    onClick={() => {
+                      handleFeatureHover(item)
+                      navigate({ to: item.path })
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
-                        navigate({ to: action.path })
+                        navigate({ to: item.path })
                       }
                     }}
-                    className={`p-3.5 rounded-lg border-2 transition-all cursor-pointer flex flex-col justify-between focus:outline-none relative ${
+                    className={`p-3.5 rounded-lg border-2 transition-all cursor-pointer flex flex-col justify-between focus:outline-none ${
                       isHovered
-                        ? 'border-[#1C3035] dark:border-slate-300 shadow-[3px_3px_0px_#1C3035] dark:shadow-[3px_3px_0px_#0f172a] -translate-y-0.5 bg-[#F3EEE3] dark:bg-slate-800'
-                        : 'border-[#1C3035]/25 dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 hover:border-[#1C3035]'
+                        ? 'border-[#1C3035] bg-[#F3EEE3] dark:bg-slate-800 shadow-[3px_3px_0px_#2D8CFF] -translate-y-0.5'
+                        : 'border-[#1C3035]/25 dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 hover:border-[#1C3035] hover:shadow-[2px_2px_0px_#1C3035]'
                     }`}
                   >
-                    {isHovered && (
-                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#2D8CFF] rounded-r" />
-                    )}
-
                     <div className="flex items-center justify-between">
-                      <Icon className={`size-4 ${action.color}`} />
-                      <ArrowUpRight className={`size-3.5 transition-colors ${
-                        isHovered ? 'text-[#2D8CFF]' : 'text-slate-400 group-hover:text-[#1C3035]'
-                      }`} />
+                      <div className="flex items-center gap-2">
+                        <Icon className={`size-4 ${item.color}`} />
+                        {isHovered && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#2D8CFF] animate-pulse" />
+                        )}
+                      </div>
+                      <ArrowUpRight className={`size-3.5 transition-colors ${isHovered ? 'text-[#2D8CFF]' : 'text-slate-400'}`} />
                     </div>
-
                     <div className="pt-2 mt-1">
                       <div className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
-                        {action.label}
+                        {item.label}
                       </div>
                       <div className="text-[10px] text-slate-500 font-semibold truncate">
-                        {action.note}
+                        {item.note}
                       </div>
                     </div>
                   </div>
@@ -1169,70 +1217,92 @@ function DashboardPage() {
 
           </div>
 
-          {/* RIGHT: RESORT REFERENCE VISUAL PANEL (5 cols on lg) */}
-          <div className="lg:col-span-5 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] dark:shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between space-y-4">
+          {/* RIGHT PART: Dedicated Resort Reference Visual Panel (5 cols on lg) */}
+          <div className="lg:col-span-5 flex flex-col rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] dark:shadow-[4px_4px_0px_#0f172a] justify-between space-y-4">
             
-            {/* Panel Header & Live Tag */}
+            {/* Panel Top Line */}
             <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#5B9EA3] animate-pulse" />
-                <span className="text-xs font-black uppercase tracking-widest text-[#1C3035] dark:text-white">
+                <span className="w-2.5 h-2.5 bg-[#5B9EA3] rounded-xs" />
+                <span className="text-xs font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
                   Resort Reference
                 </span>
               </div>
-              <span className="text-[10px] font-black tracking-widest px-2.5 py-0.5 rounded bg-[#1C3035] text-[#FBF9F4] uppercase">
-                {activeDeskRef.tag}
+              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded bg-[#1C3035]/10 dark:bg-slate-800 text-[#1C3035] dark:text-slate-300 border border-[#1C3035]/20">
+                {activeReference.category}
               </span>
             </div>
 
-            {/* Dedicated Visual Object Frame with Smooth Transition */}
-            <div className="relative rounded-lg border-2 border-[#1C3035] dark:border-slate-700 overflow-hidden shadow-[3px_3px_0px_#1C3035] aspect-[16/10] sm:aspect-[4/3] bg-[#1C3035]">
+            {/* Dedicated Visual Image Frame (NOT a background) */}
+            <div className="relative rounded-lg border-2 border-[#1C3035] overflow-hidden bg-[#1C3035] aspect-[16/10] sm:aspect-[16/11] shadow-[3px_3px_0px_#1C3035]">
               <img
-                key={activeDeskRef.image}
-                src={activeDeskRef.image}
-                alt={activeDeskRef.title}
-                className="w-full h-full object-cover object-center transition-opacity duration-400 ease-out"
+                src={activeReference.image}
+                alt={activeReference.captionTitle}
+                className={`w-full h-full object-cover transition-opacity duration-350 ease-in-out ${
+                  isFading ? 'opacity-30' : 'opacity-100'
+                }`}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1C3035]/80 via-transparent to-transparent pointer-events-none" />
-
-              {/* Architectural Reference ID Badge */}
-              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between pointer-events-none text-[#FBF9F4]">
-                <span className="text-[10px] font-mono font-bold tracking-widest uppercase opacity-90">
-                  REF: {hoveredDeskId ? hoveredDeskId.toUpperCase() : 'RESORT-CORE'}
-                </span>
-                <span className="text-[10px] font-black tracking-wider text-[#D8C7AA] uppercase">
-                  Physical Context
+              <div className="absolute top-2.5 left-2.5">
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#1C3035]/85 text-[#FBF9F4] border border-white/20 text-[9px] font-extrabold uppercase tracking-widest backdrop-blur-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#5B9EA3] animate-pulse" />
+                  <span>Physical Property View</span>
                 </span>
               </div>
             </div>
 
-            {/* Contextual Hospitality Caption */}
-            <div className="space-y-1 pt-1">
-              <div className="flex items-baseline justify-between gap-2">
-                <h3 className="text-xl sm:text-2xl font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
-                  {activeDeskRef.title}
-                </h3>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
-                  Hospitality Focus
+            {/* Caption Plaque */}
+            <div className="p-4 rounded-lg bg-[#F3EEE3]/80 dark:bg-slate-800/60 border border-[#1C3035]/15 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black tracking-widest uppercase text-slate-500">
+                  Operational Context
+                </span>
+                <span className="text-[10px] font-mono font-bold text-[#5B9EA3]">
+                  {activeReference.id === 'default' ? 'PROPERTY ARCHIVE' : 'ACTIVE REFERENCE'}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 leading-relaxed min-h-[40px]">
-                {activeDeskRef.caption}
-              </p>
+
+              <div className={`transition-all duration-300 ${isFading ? 'opacity-40 translate-y-0.5' : 'opacity-100 translate-y-0'}`}>
+                <h4 className="text-base sm:text-lg font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
+                  {activeReference.captionTitle}
+                </h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-0.5">
+                  {activeReference.captionText}
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-[#1C3035]/10 dark:border-slate-700 flex justify-end">
+                {activeReference.id !== 'default' ? (
+                  (() => {
+                    const currentItem = STAFF_DESK_ITEMS.find(i => i.id === activeReference.id)
+                    if (!currentItem) return null
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => navigate({ to: currentItem.path })}
+                        className="inline-flex items-center gap-1 text-xs font-black text-[#2D8CFF] hover:underline cursor-pointer"
+                      >
+                        <span>Open {currentItem.label} Module →</span>
+                        <ArrowRight className="size-3.5" />
+                      </button>
+                    )
+                  })()
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: '/resort-360' })}
+                    className="inline-flex items-center gap-1 text-xs font-black text-[#2D8CFF] hover:underline cursor-pointer"
+                  >
+                    <span>Open 3D Spatial Twin →</span>
+                    <ArrowRight className="size-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Direct Route Action Shortcut */}
-            <div className="pt-2 border-t border-[#1C3035]/15 dark:border-slate-800 flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold text-slate-500 truncate">
-                Click feature to inspect area:
-              </span>
-              <Button
-                onClick={() => navigate({ to: activeDeskRef.path })}
-                className="rounded-lg text-xs font-black bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white border-2 border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer gap-1.5 shrink-0"
-              >
-                <span>Open {activeDeskRef.title}</span>
-                <ArrowRight className="size-3.5" />
-              </Button>
+            {/* Panel Footnote */}
+            <div className="text-[10px] text-slate-500 font-semibold flex items-center justify-between pt-1">
+              <span>Hover or focus any feature on the left to inspect</span>
+              <span className="text-[#5B9EA3]">10 Operations Views</span>
             </div>
 
           </div>
