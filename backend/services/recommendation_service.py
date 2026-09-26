@@ -52,7 +52,7 @@ ROOM_TYPE_META = {
 }
 
 # Canonical valid room types in DB
-VALID_ROOM_TYPES = {"Standard", "Deluxe", "Family", "Suite"}
+VALID_ROOM_TYPES = {"Normal", "Standard", "Deluxe", "Duplex", "Luxury", "Family", "Suite"}
 
 # Requirements NOT in the Room model — must never be fabricated
 UNSUPPORTED_ATTRIBUTES = {
@@ -121,8 +121,14 @@ def _deterministic_parse(query: str) -> dict:
         result["room_type"] = "Family"
     elif "suite" in q:
         result["room_type"] = "Suite"
+    elif "luxury" in q:
+        result["room_type"] = "Luxury"
+    elif "duplex" in q:
+        result["room_type"] = "Duplex"
     elif "deluxe" in q:
         result["room_type"] = "Deluxe"
+    elif "normal" in q:
+        result["room_type"] = "Normal"
     elif "standard" in q:
         result["room_type"] = "Standard"
 

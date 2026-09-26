@@ -50,6 +50,7 @@ export interface ComplaintCreatePayload {
   room_number: number;
   text: string;
   language: string;
+  photo?: File;
 }
 
 export interface ClassificationInfo {
@@ -79,6 +80,7 @@ export interface ComplaintResponse {
   text: string;
   language: string;
   status: string;
+  photo_path?: string | null;
   created_at: string;
   // Enriched fields for POST
   task_id?: number | null;
@@ -115,6 +117,30 @@ export interface TaskResponse {
   assignments?: AssignmentInfo[];
   completion_proofs?: CompletionProofResponse[];
   status_history?: TaskStatusHistoryResponse[];
+  sla_status?: string | null;
+  minutes_remaining?: number | null;
+  minutes_overdue?: number | null;
+  minutes_inactive?: number | null;
+  reason?: string | null;
+  staff_name?: string | null;
+  complaint_photo_path?: string | null;
+}
+
+export interface GuestRequestResponse {
+  id: number;
+  request_category: string;
+  text: string;
+  status: string;
+  photo_path?: string;
+  created_at: string;
+}
+
+export interface NotificationResponse {
+  id: number;
+  message: string;
+  related_request_id?: number;
+  read: boolean;
+  created_at: string;
 }
 
 // ── Day 3: Staff, Stats, Rooms ───────────────────────────────────────────────
@@ -158,6 +184,49 @@ export interface RoomResponse {
   room_type: string;
   floor: number | null;
   status: string; // occupied | available | cleaning | maintenance
+  base_price_per_night: number;
+  max_adults: number;
+  max_children: number;
+  has_extra_bed_option: boolean;
+  extra_bed_price: number;
+  booking_status?: string;
+  booking_check_in?: string;
+  booking_check_out?: string;
+  cleaning_started_at?: string;
+  cleaning_duration_minutes?: number;
+  cleaning_minutes_remaining?: number;
+}
+
+export interface RoomCategoryResponse {
+  category: string;
+  typical_price: number;
+  max_adults: number;
+  max_children: number;
+  has_extra_bed: boolean;
+}
+
+export interface BookingResponse {
+  id: number;
+  room_id: number;
+  guest_id: number;
+  check_in_date: string;
+  check_out_date: string;
+  adults: number;
+  children: number;
+  extra_beds_requested: number;
+  status: string;
+  total_price: number;
+  created_at: string;
+  cancellation_risk?: {
+    probability: number;
+    risk_level: string;
+    model: string;
+    is_backfilled?: boolean;
+  };
+}
+
+export interface BookingWithRoomResponse extends BookingResponse {
+  room: RoomResponse;
 }
 
 export interface RecommendationResponse {
@@ -227,6 +296,30 @@ export interface AuditLogResponse {
   created_at: string;
 }
 
+export interface EventSignal {
+  name: string;
+  category: string;
+  importance: string;
+}
+
+export interface DailyDemandForecast {
+  date: string;
+  predicted_demand: number;
+  event: EventSignal | null;
+  planning_signal: string | null;
+}
+
+export interface DemandForecastResponse {
+  model_name: string;
+  model_version: string;
+  horizon_days: number;
+  forecast: DailyDemandForecast[];
+  source: string;
+  disclaimer: string;
+  metrics: any;
+  explanation: string[];
+}
+
 // ============================================================================
 // API Methods
 // ============================================================================
@@ -234,11 +327,32 @@ export interface AuditLogResponse {
 export const api = {
   getHealth: () => fetchAPI('/health'),
   
-  createComplaint: (payload: ComplaintCreatePayload): Promise<ComplaintResponse> => 
-    fetchAPI<ComplaintResponse>('/api/complaints', {
+  createComplaint: async (payload: ComplaintCreatePayload): Promise<ComplaintResponse> => {
+    const formData = new FormData();
+    formData.append('guest_id', payload.guest_id.toString());
+    formData.append('room_number', payload.room_number.toString());
+    formData.append('text', payload.text);
+    formData.append('language', payload.language);
+    formData.append('request_category', 'complaint');
+    if (payload.photo) {
+      formData.append('photo', payload.photo);
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/api/complaints`, {
       method: 'POST',
-      body: JSON.stringify(payload),
-    }),
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      let errorMessage = 'Submission failed';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.detail || errorMessage;
+      } catch (e) {}
+      throw new APIError(response.status, errorMessage);
+    }
+    return response.json();
+  },
     
   getComplaints: (): Promise<ComplaintResponse[]> => 
     fetchAPI<ComplaintResponse[]>('/api/complaints'),
@@ -248,6 +362,18 @@ export const api = {
     
   getTasks: (): Promise<TaskResponse[]> => 
     fetchAPI<TaskResponse[]>('/api/tasks'),
+    
+  getAttentionTasks: (): Promise<TaskResponse[]> => 
+    fetchAPI<TaskResponse[]>('/api/tasks/attention'),
+
+  getReassignmentCandidates: (taskId: number): Promise<any> =>
+    fetchAPI<any>(`/api/tasks/${taskId}/reassignment-candidates`),
+
+  reassignTask: (taskId: number, newStaffId: number, reason?: string): Promise<TaskResponse> =>
+    fetchAPI<TaskResponse>(`/api/tasks/${taskId}/reassign`, {
+      method: 'POST',
+      body: JSON.stringify({ new_staff_id: newStaffId, reason: reason ?? 'Manager-initiated reassignment' }),
+    }),
     
   getTask: (id: number): Promise<TaskResponse> => 
     fetchAPI<TaskResponse>(`/api/tasks/${id}`),
@@ -285,11 +411,42 @@ export const api = {
   getStaff: (): Promise<StaffMemberResponse[]> =>
     fetchAPI<StaffMemberResponse[]>('/api/staff'),
 
+  updateStaffAvailability: (staffId: number, available: boolean): Promise<StaffMemberResponse> =>
+    fetchAPI<StaffMemberResponse>(`/api/staff/${staffId}/availability`, {
+      method: 'PATCH',
+      body: JSON.stringify({ available }),
+    }),
+
   getStats: (): Promise<ResortStatsResponse> =>
     fetchAPI<ResortStatsResponse>('/api/stats'),
 
-  getRooms: (): Promise<RoomResponse[]> =>
-    fetchAPI<RoomResponse[]>('/api/rooms'),
+  getRooms: (viewDate?: string): Promise<RoomResponse[]> =>
+    fetchAPI<RoomResponse[]>(viewDate ? `/api/rooms?view_date=${viewDate}` : '/api/rooms'),
+
+  // ── Bookings ─────────────────────────────────────────────────────────────
+  getRoomCategories: (): Promise<RoomCategoryResponse[]> =>
+    fetchAPI<RoomCategoryResponse[]>('/api/rooms/categories'),
+    
+  getAvailableRooms: (checkIn: string, checkOut: string, category?: string, adults?: number): Promise<RoomResponse[]> => {
+    let url = `/api/rooms/available?check_in=${checkIn}&check_out=${checkOut}`;
+    if (category) url += `&category=${category}`;
+    if (adults) url += `&adults=${adults}`;
+    return fetchAPI<RoomResponse[]>(url);
+  },
+  
+  getAllBookings: (): Promise<BookingWithRoomResponse[]> =>
+    fetchAPI<BookingWithRoomResponse[]>('/api/bookings'),
+    
+  createBooking: (payload: any): Promise<BookingResponse> =>
+    fetchAPI<BookingResponse>('/api/bookings', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+    
+  cancelBooking: (bookingId: number): Promise<BookingResponse> =>
+    fetchAPI<BookingResponse>(`/api/bookings/${bookingId}/cancel`, {
+      method: 'POST'
+    }),
 
   getNextAction: (): Promise<RecommendationResponse> =>
     fetchAPI<RecommendationResponse>('/api/intelligence/next-action'),
@@ -331,7 +488,40 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
-  }
+  },
+
+  getDemandForecast: (): Promise<DemandForecastResponse> =>
+    fetchAPI<DemandForecastResponse>('/api/ml/demand-forecast'),
+    
+  // ── Guest Portal ─────────────────────────────────────────────────────────────
+  
+  getGuestRequests: (guestId: number): Promise<GuestRequestResponse[]> =>
+    fetchAPI(`/api/guest/${guestId}/requests`),
+    
+  createGuestRequest: async (guestId: number, category: string, text: string, roomNumber: number, photo?: File): Promise<ComplaintResponse> => {
+    const formData = new FormData();
+    formData.append('guest_id', guestId.toString());
+    formData.append('room_number', roomNumber.toString());
+    formData.append('text', text);
+    formData.append('request_category', category);
+    formData.append('language', 'en'); // default
+    if (photo) formData.append('photo', photo);
+    
+    const response = await fetch(`${API_BASE_URL}/api/guest/${guestId}/requests`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) {
+        throw new Error("Failed to create request");
+    }
+    return response.json();
+  },
+  
+  getGuestNotifications: (guestId: number): Promise<NotificationResponse[]> =>
+    fetchAPI(`/api/guest/${guestId}/notifications`),
+    
+  markNotificationRead: (guestId: number, notificationId: number) =>
+    fetchAPI(`/api/guest/${guestId}/notifications/${notificationId}/read`, { method: 'POST' }),
 };
 
 export interface SystemicIssue {

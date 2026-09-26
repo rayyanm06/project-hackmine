@@ -93,7 +93,7 @@ def test_no_mutation(test_db):
 
 # ── Test 8: Complaint submission with "en" succeeds
 def test_complaint_submission_en(test_db):
-    res = client.post("/api/complaints", json={
+    res = client.post("/api/complaints", data={
         "guest_id": 1,
         "room_number": 101,
         "text": "AC broken",

@@ -145,15 +145,17 @@ Respond ONLY with valid JSON. Use exactly this schema:
         return None
 
 def get_next_best_action(
+    db,
     active_tasks: List[Task], 
     staff: List[Staff], 
     rooms: List[Room],
     staff_task_counts: dict
 ) -> RecommendationResponse:
+    from backend.services.sla_service import process_task_attention
     
     unassigned_tasks = [t for t in active_tasks if t.status == 'created']
     unassigned_high_priority = [t for t in unassigned_tasks if t.priority in ['High', 'high', 'Critical', 'critical']]
-    stalled_tasks = [t for t in active_tasks if t.status == 'in_progress'] # Simplification
+    
     maintenance_rooms = [r for r in rooms if r.status == 'maintenance']
     
     overloaded_staff = []
@@ -162,25 +164,103 @@ def get_next_best_action(
         if count >= 3:
             overloaded_staff.append({"id": s.id, "name": s.user.name, "count": count})
 
-    # Prepare snapshot for LLM
+    # 1. High-priority unassigned tasks
+    if unassigned_high_priority:
+        task = unassigned_high_priority[0]
+        return RecommendationResponse(
+            action=f"Assign {task.priority} priority task TSK-{task.id} ({task.issue_type})",
+            reason=f"A {task.priority} priority {task.department} task is currently unassigned.",
+            priority=task.priority.lower(),
+            evidence=[
+                f"Task TSK-{task.id} is {task.priority} priority",
+                f"Task TSK-{task.id} is unassigned",
+                f"Location: {task.location or 'Unknown'}"
+            ],
+            source="rule_based"
+        )
+        
+    # Process SLA tasks
+    overdue_tasks = []
+    stalled_tasks = []
+    at_risk_high_tasks = []
+    
+    for t in active_tasks:
+        if t.status in ["assigned", "in_progress"]:
+            result = process_task_attention(db, t)
+            if result:
+                if result["sla_status"] == "overdue":
+                    overdue_tasks.append((t, result))
+                elif result["sla_status"] == "stalled":
+                    stalled_tasks.append((t, result))
+                elif result["sla_status"] == "at_risk" and str(t.priority).lower() in ["high", "critical"]:
+                    at_risk_high_tasks.append((t, result))
+                    
+    # 2. Overdue tasks
+    if overdue_tasks:
+        task, sla_info = overdue_tasks[0]
+        return RecommendationResponse(
+            action=f"Review overdue {str(task.issue_type).lower()} task for {task.location}",
+            reason=sla_info["reason"],
+            priority="high",
+            evidence=[
+                f"Assigned Staff: {sla_info.get('staff_name', 'Unknown')}",
+                f"Assigned At: {sla_info.get('assigned_at')}",
+                f"SLA Deadline: {sla_info.get('sla_deadline')}",
+                f"Overdue Minutes: {sla_info.get('minutes_overdue')}",
+                f"Task Priority: {task.priority}"
+            ],
+            source="rule_based"
+        )
+        
+    # 3. Stalled tasks
+    if stalled_tasks:
+        task, sla_info = stalled_tasks[0]
+        return RecommendationResponse(
+            action=f"Review stalled {str(task.issue_type).lower()} task for {task.location}",
+            reason=sla_info["reason"],
+            priority="high",
+            evidence=[
+                f"Assigned Staff: {sla_info.get('staff_name', 'Unknown')}",
+                f"Assigned At: {sla_info.get('assigned_at')}",
+                f"Inactive Minutes: {sla_info.get('minutes_inactive')}",
+                f"Task Priority: {task.priority}"
+            ],
+            source="rule_based"
+        )
+        
+    # 4. High-priority at_risk tasks
+    if at_risk_high_tasks:
+        task, sla_info = at_risk_high_tasks[0]
+        return RecommendationResponse(
+            action=f"Monitor at-risk {str(task.issue_type).lower()} task for {task.location}",
+            reason=sla_info["reason"],
+            priority="high",
+            evidence=[
+                f"Assigned Staff: {sla_info.get('staff_name', 'Unknown')}",
+                f"Minutes Remaining: {sla_info.get('minutes_remaining')}",
+                f"Task Priority: {task.priority}"
+            ],
+            source="rule_based"
+        )
+
+    # 5. Fallback to existing LLM / deterministic for overloaded-staff, unavailable-room, etc.
     snapshot = {
-        "unassigned_high_priority_tasks": [{"id": t.id, "priority": t.priority, "issue": t.issue_type} for t in unassigned_high_priority],
-        "unassigned_other_tasks": [{"id": t.id, "priority": t.priority, "issue": t.issue_type} for t in unassigned_tasks if t not in unassigned_high_priority],
+        "unassigned_high_priority_tasks": [],
+        "unassigned_other_tasks": [{"id": t.id, "priority": t.priority, "issue": t.issue_type} for t in unassigned_tasks],
         "overloaded_staff": overloaded_staff,
         "available_staff_count": len([s for s in staff if s.available]),
         "rooms_in_maintenance": [r.room_number for r in maintenance_rooms]
     }
 
-    # Try LLM first
     result = _llm_recommendation(snapshot)
     if result:
         return result
         
-    # Fallback to deterministic
+    stalled_fallback = [t for t in active_tasks if t.status == 'in_progress']
     return _deterministic_recommendation(
-        unassigned_high_priority, 
+        [], 
         unassigned_tasks, 
-        stalled_tasks, 
+        stalled_fallback, 
         overloaded_staff, 
         maintenance_rooms
     )

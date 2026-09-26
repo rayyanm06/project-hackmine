@@ -91,15 +91,25 @@ def seed():
 
         import datetime
         from backend.models import Task, Assignment, AuditLog, TaskStatusHistory, CompletionProof
+        
+        now = datetime.datetime.utcnow()
         # Seed 3 active tasks to populate the demo dashboard immediately
         tasks_data = [
-            (complaint_objs[0], "AC Repair", "Maintenance", "high", "Room 101", "AC Repair", "Alice Maint", "in_progress"),
-            (complaint_objs[3], "Plumbing", "Maintenance", "medium", "Room 205", "Plumbing", "Bob Maint", "assigned"),
-            (complaint_objs[4], "Cleaning", "Housekeeping", "medium", "Room 302", "Cleaning", "Dave House", "completed")
+            # High priority, assigned 20 mins ago -> OVERDUE
+            (complaint_objs[0], "AC Repair", "Maintenance", "high", "Room 101", "AC Repair", "Alice Maint", "assigned", 20),
+            # Medium priority, assigned 10 mins ago -> ON_TRACK (or AT_RISK depending on config, config has 30 mins, so 10 mins is ON_TRACK)
+            (complaint_objs[3], "Plumbing", "Maintenance", "medium", "Room 205", "Plumbing", "Bob Maint", "assigned", 10),
+            # In progress, started 65 mins ago -> STALLED
+            (complaint_objs[4], "Cleaning", "Housekeeping", "medium", "Room 302", "Cleaning", "Dave House", "in_progress", 65)
         ]
         
-        for c, issue, dept, prio, loc, req_skill, staff_name, status in tasks_data:
+        for c, issue, dept, prio, loc, req_skill, staff_name, status, mins_ago in tasks_data:
             skill = skill_map.get(req_skill)
+            
+            # Base timestamp for when this task started its lifecycle
+            created_at = now - datetime.timedelta(minutes=mins_ago + 5)
+            action_at = now - datetime.timedelta(minutes=mins_ago)
+            
             t = Task(
                 complaint_id=c.id,
                 issue_type=issue,
@@ -107,7 +117,9 @@ def seed():
                 priority=prio,
                 location=loc,
                 required_skill_id=skill.id if skill else None,
-                status=status
+                status=status,
+                created_at=created_at,
+                updated_at=action_at
             )
             db.add(t)
             db.commit()
@@ -125,7 +137,8 @@ def seed():
                     task_id=t.id,
                     staff_id=st.id,
                     score=85.0,
-                    score_breakdown={"skill": 35, "availability": 20, "workload": 30}
+                    score_breakdown={"skill": 35, "availability": 20, "workload": 30},
+                    assigned_at=action_at
                 )
                 db.add(a)
                 db.commit()
@@ -135,7 +148,8 @@ def seed():
                 resource_type="complaint",
                 resource_id=c.id,
                 action="classification",
-                details_json={"issue_type": issue, "department": dept, "priority": prio}
+                details_json={"issue_type": issue, "department": dept, "priority": prio},
+                created_at=created_at
             ))
 
             # Audit Log for Assignment
@@ -143,15 +157,16 @@ def seed():
                 resource_type="task",
                 resource_id=t.id,
                 action="assignment",
-                details_json={"assigned_to": staff_name, "score": 85.0}
+                details_json={"assigned_to": staff_name, "score": 85.0},
+                created_at=action_at
             ))
             
             # Status History
-            db.add(TaskStatusHistory(task_id=t.id, old_status="created", new_status="assigned"))
+            db.add(TaskStatusHistory(task_id=t.id, old_status="created", new_status="assigned", timestamp=action_at))
             if status in ["in_progress", "completed"]:
-                db.add(TaskStatusHistory(task_id=t.id, old_status="assigned", new_status="in_progress"))
+                db.add(TaskStatusHistory(task_id=t.id, old_status="assigned", new_status="in_progress", timestamp=action_at))
             if status == "completed":
-                db.add(TaskStatusHistory(task_id=t.id, old_status="in_progress", new_status="completed"))
+                db.add(TaskStatusHistory(task_id=t.id, old_status="in_progress", new_status="completed", timestamp=action_at))
                 db.add(CompletionProof(task_id=t.id, photo_path="uploads/proofs/seeded_proof.png", verified=False))
                 
         db.commit()

@@ -4,10 +4,11 @@ from datetime import datetime
 
 
 class ComplaintCreate(BaseModel):
-    guest_id: int
-    room_number: int
+    guest_id: int = Field(..., gt=0)
+    room_number: int = Field(..., gt=0, description="Room number is mandatory")
     text: str = Field(..., min_length=1)
     language: str
+    request_category: str = "complaint"
 
 
 class ComplaintResponse(BaseModel):
@@ -17,6 +18,8 @@ class ComplaintResponse(BaseModel):
     room_number: int
     text: str
     language: str
+    request_category: str = "complaint"
+    photo_path: Optional[str] = None
     status: str
     created_at: datetime
 
@@ -58,6 +61,8 @@ class ComplaintCreateResponse(BaseModel):
     room_number: int
     text: str
     language: str
+    request_category: str = "complaint"
+    photo_path: Optional[str] = None
     status: str
     created_at: datetime
 

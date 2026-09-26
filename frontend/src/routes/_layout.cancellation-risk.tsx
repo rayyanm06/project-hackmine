@@ -1,236 +1,118 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { api } from '@/lib/api'
+import { useState, useEffect } from 'react'
+import { api, BookingWithRoomResponse } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Info } from 'lucide-react'
+import { format } from 'date-fns'
 
 export const Route = createFileRoute('/_layout/cancellation-risk')({
   component: CancellationRisk,
 })
 
 function CancellationRisk() {
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [bookings, setBookings] = useState<BookingWithRoomResponse[]>([])
   
-  // Default values mapping the training features
-  const [form, setForm] = useState({
-    lead_time: 45,
-    country: 'PRT',
-    market_segment: 'Online TA',
-    deposit_type: 'No Deposit',
-    customer_type: 'Transient',
-    total_of_special_requests: 0,
-    previous_cancellations: 0,
-    is_repeated_guest: 0,
-    adults: 2,
-    adr: 105.0,
-    
-    // Other defaults to satisfy schema
-    arrival_date_week_number: 27,
-    arrival_date_day_of_month: 4,
-    stays_in_weekend_nights: 0,
-    stays_in_week_nights: 2,
-    children: 0,
-    babies: 0,
-    previous_bookings_not_canceled: 0,
-    booking_changes: 0,
-    agent: 9.0,
-    days_in_waiting_list: 0,
-    required_car_parking_spaces: 0,
-    hotel: 'Resort Hotel',
-    arrival_date_year: 2017,
-    arrival_date_month: 'July',
-    meal: 'BB',
-    distribution_channel: 'TA/TO',
-    reserved_room_type: 'A'
-  })
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target
-    setForm(prev => ({
-      ...prev,
-      [name]: type === 'number' ? Number(value) : value
-    }))
-  }
-
-  const handleSelect = (name: string, value: string | number) => {
-    setForm(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleAnalyze = async () => {
-    setLoading(true)
-    try {
-      const res = await api.analyzeCancellationRisk(form)
-      setResult(res)
-    } catch (err) {
-      console.error(err)
-      alert("Failed to analyze risk")
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const res = await api.getAllBookings()
+        // Sort descending by created_at (or id) to show recent first
+        res.sort((a, b) => b.id - a.id)
+        setBookings(res)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
-
-  const getRiskColor = (level: string) => {
-    if (level === 'High') return 'text-red-600 bg-red-50 border-red-200'
-    if (level === 'Medium') return 'text-orange-600 bg-orange-50 border-orange-200'
-    return 'text-green-600 bg-green-50 border-green-200'
-  }
+    fetchBookings()
+  }, [])
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Booking Risk Analysis</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Cancellation Risk Dashboard</h2>
       </div>
       
       <div className="flex items-center gap-2 p-3 bg-indigo-50 text-indigo-800 border border-indigo-100 rounded-md text-sm">
         <Info className="h-4 w-4" />
-        <strong>MODEL DEMO</strong> — Trained on public hospitality booking data. This does not use Smart Resort's actual history.
+        <strong>AUTOMATED MODEL</strong> — Cancellation Risk is automatically predicted for new bookings. This dashboard shows the risk levels of recent reservations.
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Booking Profile</CardTitle>
-            <CardDescription>Input values for ML prediction</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <div className="grid gap-4">
+        {loading ? (
+          <div className="text-muted-foreground">Loading bookings...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {bookings.filter(b => b.status === 'confirmed').map(booking => {
+              const risk = booking.cancellation_risk;
+              const hasRisk = !!risk;
+              const riskColor = risk?.risk_level === 'High' ? 'text-red-700 bg-red-100 border-red-200' :
+                                risk?.risk_level === 'Medium' ? 'text-amber-700 bg-amber-100 border-amber-200' :
+                                'text-green-700 bg-green-100 border-green-200';
+                                
+              return (
+                <Card key={booking.id} className="overflow-hidden">
+                  <CardHeader className="pb-2 bg-slate-50 border-b">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">Room {booking.room.room_number}</CardTitle>
+                        <CardDescription>{booking.room.room_type}</CardDescription>
+                      </div>
+                      <Badge variant="outline" className="bg-white">ID: #{booking.id}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4 space-y-4">
+                    <div className="text-sm">
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-muted-foreground">Dates</span>
+                        <span className="font-medium">{format(new Date(booking.check_in_date), 'dd MMM yyyy')} - {format(new Date(booking.check_out_date), 'dd MMM yyyy')}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-muted-foreground">Guests</span>
+                        <span className="font-medium">{booking.adults} Adults, {booking.children} Children</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-muted-foreground">Total Price</span>
+                        <span className="font-medium">₹{booking.total_price}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2">
+                      <div className="text-sm font-semibold mb-2 text-slate-700">Automated Risk Assessment</div>
+                      {hasRisk ? (
+                        <div className={`p-3 rounded-md border flex items-center justify-between ${riskColor}`}>
+                          <div className="font-bold">{risk.risk_level} Risk</div>
+                          <div className="text-lg font-black">{Math.round(risk.probability * 100 * 10) / 10}%</div>
+                        </div>
+                      ) : (
+                        <div className="p-3 rounded-md border bg-slate-100 text-slate-500 text-sm italic text-center">
+                          Risk unavailable
+                          <div className="text-[10px] mt-1">Genuinely insufficient information for this legacy booking.</div>
+                        </div>
+                      )}
+                      {hasRisk && (
+                         <div className="flex flex-col text-[10px] text-muted-foreground mt-2 text-right">
+                           {risk.is_backfilled && (
+                             <span className="italic text-slate-400 mb-1">Backfilled from available booking data</span>
+                           )}
+                           <span>Model: {risk.model}</span>
+                         </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>Lead Time (Days)</Label>
-                <Input type="number" name="lead_time" value={form.lead_time} onChange={handleChange} />
+            {bookings.length === 0 && (
+              <div className="col-span-full text-center p-8 text-muted-foreground bg-slate-50 rounded-lg border border-dashed">
+                No recent bookings found.
               </div>
-              <div className="space-y-1">
-                <Label>Country (e.g. PRT, GBR, FRA)</Label>
-                <Input type="text" name="country" value={form.country} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>Market Segment</Label>
-                <Select value={form.market_segment} onValueChange={(val) => handleSelect('market_segment', val)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Online TA">Online TA</SelectItem>
-                    <SelectItem value="Offline TA/TO">Offline TA/TO</SelectItem>
-                    <SelectItem value="Groups">Groups</SelectItem>
-                    <SelectItem value="Direct">Direct</SelectItem>
-                    <SelectItem value="Corporate">Corporate</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Deposit Type</Label>
-                <Select value={form.deposit_type} onValueChange={(val) => handleSelect('deposit_type', val)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="No Deposit">No Deposit</SelectItem>
-                    <SelectItem value="Non Refund">Non Refund</SelectItem>
-                    <SelectItem value="Refundable">Refundable</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>ADR ($)</Label>
-                <Input type="number" step="0.01" name="adr" value={form.adr} onChange={handleChange} />
-              </div>
-              <div className="space-y-1">
-                <Label>Special Requests</Label>
-                <Input type="number" name="total_of_special_requests" value={form.total_of_special_requests} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>Previous Cancellations</Label>
-                <Input type="number" name="previous_cancellations" value={form.previous_cancellations} onChange={handleChange} />
-              </div>
-              <div className="space-y-1">
-                <Label>Is Repeated Guest</Label>
-                <Select value={form.is_repeated_guest.toString()} onValueChange={(val) => handleSelect('is_repeated_guest', Number(val))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">No</SelectItem>
-                    <SelectItem value="1">Yes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Button onClick={handleAnalyze} disabled={loading} className="w-full mt-4">
-              {loading ? "Analyzing..." : "Analyze Cancellation Risk"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {result && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Prediction Result
-                <Badge className={getRiskColor(result.risk_level)} variant="outline">
-                  {result.risk_level} Risk
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-center p-6 bg-slate-50 rounded-lg border">
-                <div className="text-center">
-                  <div className="text-4xl font-bold mb-2">
-                    {(result.cancellation_probability * 100).toFixed(1)}%
-                  </div>
-                  <div className="text-sm text-slate-500 font-medium">Predicted Probability</div>
-                </div>
-              </div>
-
-              <Separator />
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Model Name</span>
-                  <span className="font-medium">{result.model_name} ({result.model_version})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Algorithm</span>
-                  <span className="font-medium">{result.algorithm}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Dataset Source</span>
-                  <span className="font-medium">{result.dataset_source}</span>
-                </div>
-                <div className="flex justify-between pt-2">
-                  <span className="text-slate-500">Evaluation (ROC-AUC)</span>
-                  <span className="font-medium">{result.evaluation_metrics?.roc_auc?.toFixed(4)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Evaluation (F1)</span>
-                  <span className="font-medium">{result.evaluation_metrics?.f1?.toFixed(4)}</span>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <Label className="text-xs text-slate-500">Key Input Signals Provided</Label>
-                <div className="mt-2 text-xs flex flex-wrap gap-2">
-                  <Badge variant="secondary">Lead Time: {result.key_input_features.lead_time}</Badge>
-                  <Badge variant="secondary">Deposit: {result.key_input_features.deposit_type}</Badge>
-                  <Badge variant="secondary">Segment: {result.key_input_features.market_segment}</Badge>
-                  <Badge variant="secondary">Country: {result.key_input_features.country}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         )}
       </div>
     </div>

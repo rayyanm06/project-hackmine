@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import AuditLog
-from backend.schemas.ml import CancellationPredictionRequest, CancellationPredictionResponse
-from backend.services.ml_service import predict_cancellation_risk
+from backend.schemas.ml import CancellationPredictionRequest, CancellationPredictionResponse, DemandForecastResponse
+from backend.services.ml_service import predict_cancellation_risk, predict_demand_forecast
 import datetime
 
 router = APIRouter(prefix="/api/ml", tags=["ml"])
@@ -45,3 +45,11 @@ def analyze_cancellation_risk(request: CancellationPredictionRequest, db: Sessio
     db.commit()
     
     return response
+
+@router.get("/demand-forecast", response_model=DemandForecastResponse)
+def get_demand_forecast():
+    # NOTE: No AuditLog write on GET.
+    # Ordinary page refreshes MUST NOT flood AuditLog.
+    # If an explicit manager-triggered forecast event is needed in future,
+    # implement a separate POST /api/ml/demand-forecast/generate action.
+    return predict_demand_forecast()

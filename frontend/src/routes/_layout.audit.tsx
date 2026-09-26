@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Card, CardContent } from '@/components/ui/card'
-import { BrainCircuit, Clock, User, CheckSquare, Activity } from 'lucide-react'
+import { BrainCircuit, Clock, User, CheckSquare, Activity, AlertTriangle, UserCog } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { api, type AuditLogResponse } from '@/lib/api'
 
@@ -13,6 +13,8 @@ function getIconForAction(action: string) {
   if (action === 'COMPLAINT_PROCESSED' || action.includes('CLASSIFIED')) return <User className="h-5 w-5 text-slate-700" />
   if (action === 'next_best_action_generated' || action.includes('AI') || action.includes('ACTION')) return <BrainCircuit className="h-5 w-5 text-indigo-700" />
   if (action === 'TASK_STATUS_CHANGED') return <CheckSquare className="h-5 w-5 text-green-700" />
+  if (action === 'TASK_SLA_ESCALATION') return <AlertTriangle className="h-5 w-5 text-red-700" />
+  if (action === 'TASK_REASSIGNED' || action === 'STAFF_AVAILABILITY_CHANGED' || action.includes('ROOM_BOOKING')) return <UserCog className="h-5 w-5 text-purple-700" />
   return <Activity className="h-5 w-5 text-blue-700" />
 }
 
@@ -20,6 +22,8 @@ function getBgColorForAction(action: string) {
   if (action === 'COMPLAINT_PROCESSED' || action.includes('CLASSIFIED')) return 'bg-slate-100'
   if (action === 'next_best_action_generated' || action.includes('AI') || action.includes('ACTION')) return 'bg-indigo-100'
   if (action === 'TASK_STATUS_CHANGED') return 'bg-green-100'
+  if (action === 'TASK_SLA_ESCALATION') return 'bg-red-100'
+  if (action === 'TASK_REASSIGNED' || action === 'STAFF_AVAILABILITY_CHANGED' || action.includes('ROOM_BOOKING')) return 'bg-purple-100'
   return 'bg-blue-100'
 }
 
@@ -57,6 +61,114 @@ function renderDetails(action: string, details: any) {
         </div>
       </div>
     );
+  }
+
+  if (action === 'TASK_SLA_ESCALATION') {
+    return (
+      <div className="bg-white border rounded-md divide-y overflow-hidden text-sm">
+        <div className="flex bg-red-50 p-3 items-center justify-between">
+          <div className="flex items-center gap-2">
+             <span className="text-red-800 font-bold uppercase tracking-wider text-xs">Escalation: {details.sla_status}</span>
+          </div>
+          <div>
+            <span className="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-800 border border-slate-200">Rule-Based</span>
+          </div>
+        </div>
+        <div className="p-3 text-slate-700">
+           <strong>Reason:</strong> {details.reason}
+        </div>
+        <div className="p-3 text-xs flex gap-4 text-slate-600">
+           <span><strong>Priority:</strong> {details.priority}</span>
+           {details.staff && <span><strong>Staff:</strong> {details.staff}</span>}
+           {details.minutes_remaining !== undefined && <span><strong>Remaining:</strong> {details.minutes_remaining}m</span>}
+           {details.overdue_minutes !== undefined && <span><strong>Overdue:</strong> {details.overdue_minutes}m</span>}
+           {details.elapsed_minutes !== undefined && <span><strong>Inactive:</strong> {details.elapsed_minutes}m</span>}
+        </div>
+      </div>
+    )
+  }
+
+  if (action === 'TASK_REASSIGNED') {
+    return (
+      <div className="bg-white border rounded-md divide-y overflow-hidden text-sm">
+        <div className="flex bg-purple-50 p-3 items-center justify-between">
+          <div className="flex items-center gap-2">
+             <span className="text-purple-800 font-bold uppercase tracking-wider text-xs">Manager Reassignment</span>
+          </div>
+          <div>
+            <span className="px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-800 border border-purple-200">Manager Action</span>
+          </div>
+        </div>
+        <div className="p-3 grid grid-cols-2 gap-2 text-slate-700">
+          <div><span className="text-muted-foreground">From:</span> <strong>{details.old_staff ?? 'Unknown'}</strong></div>
+          <div><span className="text-muted-foreground">To:</span> <strong>{details.new_staff ?? 'Unknown'}</strong></div>
+          <div><span className="text-muted-foreground">SLA Status at time:</span> {details.old_sla_status ?? '—'}</div>
+          <div><span className="text-muted-foreground">New score:</span> {details.new_assignment_score !== undefined ? `${(details.new_assignment_score * 100).toFixed(1)}/100` : '—'}</div>
+        </div>
+        <div className="p-3 text-slate-700">
+          <strong>Manager Reason:</strong> {details.reason}
+        </div>
+      </div>
+    )
+  }
+
+  if (action === 'STAFF_AVAILABILITY_CHANGED') {
+    return (
+      <div className="bg-white border rounded-md divide-y overflow-hidden text-sm">
+        <div className="flex bg-purple-50 p-3 items-center justify-between">
+          <div className="flex items-center gap-2">
+             <span className="text-purple-800 font-bold uppercase tracking-wider text-xs">Manager Action</span>
+          </div>
+          <div>
+            <span className="px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-800 border border-purple-200">Manual Override</span>
+          </div>
+        </div>
+        <div className="p-3 grid grid-cols-2 gap-2 text-slate-700">
+          <div><span className="text-muted-foreground">Staff:</span> <strong>{details.staff_name ?? 'Unknown'}</strong></div>
+          <div><span className="text-muted-foreground">Action:</span> Marked as <strong>{details.new_value ? 'Available' : 'Busy'}</strong></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (action === 'ROOM_BOOKING_CREATED') {
+    return (
+      <div className="bg-white border rounded-md divide-y overflow-hidden text-sm">
+        <div className="flex bg-purple-50 p-3 items-center justify-between">
+          <div className="flex items-center gap-2">
+             <span className="text-purple-800 font-bold uppercase tracking-wider text-xs">Booking Created</span>
+          </div>
+          <div>
+            <span className="px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-800 border border-purple-200">Manager Action</span>
+          </div>
+        </div>
+        <div className="p-3 grid grid-cols-2 gap-2 text-slate-700">
+          <div><span className="text-muted-foreground">Guest ID:</span> <strong>{details.guest_id}</strong></div>
+          <div><span className="text-muted-foreground">Category:</span> <strong>{details.category}</strong></div>
+          <div><span className="text-muted-foreground">Check In:</span> {details.check_in_date}</div>
+          <div><span className="text-muted-foreground">Check Out:</span> {details.check_out_date}</div>
+          <div><span className="text-muted-foreground">Total Price:</span> ₹{details.total_price}</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (action === 'ROOM_BOOKING_CANCELLED') {
+    return (
+      <div className="bg-white border rounded-md divide-y overflow-hidden text-sm">
+        <div className="flex bg-purple-50 p-3 items-center justify-between">
+          <div className="flex items-center gap-2">
+             <span className="text-purple-800 font-bold uppercase tracking-wider text-xs">Booking Cancelled</span>
+          </div>
+          <div>
+            <span className="px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-800 border border-purple-200">Manager Action</span>
+          </div>
+        </div>
+        <div className="p-3 text-slate-700">
+          <span className="text-muted-foreground">Room ID:</span> <strong>{details.room_id}</strong>
+        </div>
+      </div>
+    )
   }
 
   // Fallback for legacy complaint_processed

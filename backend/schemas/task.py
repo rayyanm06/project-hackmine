@@ -48,6 +48,12 @@ class TaskResponse(BaseModel):
     assignments: List[TaskAssignmentResponse] = []
     completion_proofs: List[CompletionProofResponse] = []
     status_history: List[TaskStatusHistoryResponse] = []
+    sla_status: Optional[str] = None
+    minutes_remaining: Optional[int] = None
+    minutes_overdue: Optional[int] = None
+    minutes_inactive: Optional[int] = None
+    reason: Optional[str] = None
+    complaint_photo_path: Optional[str] = None
 
     class Config:
         from_attributes = True

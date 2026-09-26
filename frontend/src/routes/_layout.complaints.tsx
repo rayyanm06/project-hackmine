@@ -23,6 +23,7 @@ interface Complaint {
   roomNumber?: string
   text: string
   language: string
+  photoPath?: string
   category: string
   subcategory?: string
   priority: Priority
@@ -42,6 +43,7 @@ function mapApiToComplaint(c: ComplaintResponse & { classification?: any; assign
     roomNumber: c.room_number?.toString() ?? 'N/A',
     text: c.text,
     language: c.language,
+    photoPath: c.photo_path || undefined,
     category: c.classification?.department ?? 'Pending',
     subcategory: c.classification?.issue_type,
     priority: (c.classification?.priority?.toLowerCase() as Priority) ?? 'medium',
@@ -93,6 +95,7 @@ function ComplaintsPage() {
   const [room,       setRoom]       = useState('')
   const [guest,      setGuest]      = useState('')
   const [priority,   setPriority]   = useState<Priority>('medium')
+  const [photo,      setPhoto]      = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   // AI result from last submission
@@ -118,6 +121,10 @@ function ComplaintsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!text.trim()) return
+    if (!room.trim()) {
+      alert("Room number is required");
+      return;
+    }
     setSubmitting(true)
     try {
       const response = await api.createComplaint({
@@ -125,6 +132,7 @@ function ComplaintsPage() {
         room_number: parseInt(room)  || 0,
         text:        text.trim(),
         language:    lang,
+        photo:       photo || undefined,
       })
       const newComplaint = mapApiToComplaint(response)
       setComplaints(prev => [newComplaint, ...prev])
@@ -134,6 +142,7 @@ function ComplaintsPage() {
       setGuest('')
       setPriority('medium')
       setLang('en')
+      setPhoto(null)
       alert(`Complaint submitted (Task ID: ${response.task_id ?? 'N/A'})`)
     } catch (err: any) {
       alert(`Submission failed: ${err.message}`)
@@ -186,11 +195,12 @@ function ComplaintsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Room (Optional)</label>
+                    <label className="text-sm font-medium">Room <span className="text-red-500">*</span></label>
                     <Input
                       placeholder="e.g. 204"
                       value={room}
                       onChange={e => setRoom(e.target.value)}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -202,21 +212,30 @@ function ComplaintsPage() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Priority</label>
-                  <Select value={priority} onValueChange={v => setPriority(v as Priority)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Priority</label>
+                    <Select value={priority} onValueChange={v => setPriority(v as Priority)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Attach a photo (Optional)</label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => setPhoto(e.target.files?.[0] || null)}
+                    />
+                    {photo && <p className="text-xs text-muted-foreground mt-1">Selected: {photo.name}</p>}
+                  </div>
+                </CardContent>
               <CardFooter>
                 <Button type="submit" className="w-full" disabled={submitting}>
                   {submitting ? 'Submitting…' : 'Submit Complaint'}
@@ -348,7 +367,10 @@ function ComplaintsPage() {
                           </td>
                           <td className="p-3 max-w-[200px]">
                             <div className="truncate" title={c.text}>{c.text}</div>
-                            <div className="text-xs text-muted-foreground">{c.language}</div>
+                            <div className="text-xs text-muted-foreground flex items-center">
+                              {c.language}
+                              {c.photoPath && <span className="ml-2 text-indigo-500 font-semibold" title="Photo attached">📷 Photo</span>}
+                            </div>
                           </td>
                           <td className="p-3">
                             <div>{c.category}</div>

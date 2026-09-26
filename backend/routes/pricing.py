@@ -23,7 +23,7 @@ def get_analysis(
             AuditLog.action == "PRICING_INTELLIGENCE"
         ).order_by(AuditLog.id.desc()).first()
         
-        if not last_log or last_log.details_json.get("prediction") != analysis.recommended_action:
+        if not last_log or last_log.details_json.get("prediction") != analysis.recommendation:
             audit_entry = AuditLog(
                 resource_type="pricing",
                 resource_id=0,
@@ -31,10 +31,10 @@ def get_analysis(
                 details_json={
                     "source": "llm",
                     "model": "gpt-4o-mini",
-                    "prediction": analysis.recommended_action,
-                    "confidence": analysis.confidence_score,
+                    "prediction": analysis.recommendation,
+                    "confidence": 1.0,
                     "evidence": f"Analyzed {room_type} against competitors",
-                    "reasoning": analysis.explanation
+                    "reasoning": analysis.reason
                 },
                 created_at=datetime.datetime.now(datetime.timezone.utc)
             )
@@ -45,4 +45,7 @@ def get_analysis(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        import traceback
+        with open("scratch/pricing_error.txt", "w", encoding="utf-8") as f:
+            f.write(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Failed to retrieve pricing analysis")

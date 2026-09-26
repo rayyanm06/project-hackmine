@@ -1,0 +1,34 @@
+[
+  {
+    "date": "2026-10-31",
+    "event_name": "Diwali",
+    "event_category": "National Holiday",
+    "importance": "high",
+    "duration": 1,
+    "location_scope": "National"
+  },
+  {
+    "date": "2026-11-01",
+    "event_name": "Diwali Weekend",
+    "event_category": "Long Weekend",
+    "importance": "medium",
+    "duration": 1,
+    "location_scope": "National"
+  },
+  {
+    "date": "2026-12-25",
+    "event_name": "Christmas",
+    "event_category": "Festival",
+    "importance": "high",
+    "duration": 1,
+    "location_scope": "National"
+  },
+  {
+    "date": "2026-12-31",
+    "event_name": "New Year's Eve",
+    "event_category": "Event",
+    "importance": "high",
+    "duration": 1,
+    "location_scope": "Global"
+  }
+]

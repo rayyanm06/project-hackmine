@@ -56,9 +56,52 @@
 - Visiting `/audit` perfectly renders the ML decision card with actual input evidence.
 - No duplicate audits were written upon refreshing the page.
 
-## 12. Limitations
-- **Generalization**: The model is trained on a Portuguese public dataset. Although mathematically functional as a demonstration of Smart Resort 360’s MLOps readiness, deploying this exact model to a US or Asian property would yield degraded real-world accuracy without transfer learning.
-- **Calibration**: The raw `predict_proba()` output from the Random Forest is returned. For absolute confidence percentage accuracy in production, Isotonic Regression calibration is recommended in future iterations.
+## Final Validation
+
+### Model Artifact
+Verified `cancellation_predictor_v1.joblib` and metrics JSON encapsulate the expected RandomForestClassifier model, preprocessing pipeline, and public dataset metrics.
+
+### Input Schema
+Confirmed `CancellationPredictionRequest` exactly matches the required 27 features without dropping unsupported features silently.
+
+### Probability Terminology
+The term "Cancellation probability" is used strictly across the UI and Audit Trail instead of "Confidence," avoiding assumptions of calibration.
+
+### Risk Thresholds
+Categorizations (Low, Medium, High) are explicitly documented in `ml_service.py` as "Demo risk threshold" rather than statistically optimal.
+
+### Inference
+Confirmed `POST /api/ml/cancellation-risk` processes valid inputs to return actual model predictions with bounded probability (`0 <= p <= 1`) and evaluation metrics from the artifact.
+
+### Audit Event
+A single `ML_CANCELLATION_PREDICTION` event is committed to the database upon explicit risk analysis without deduplication issues or refresh spam.
+
+### Explainability
+The audit records strictly surface global test-set evaluation metrics and raw input features without falsely claiming individual per-prediction causal feature importance.
+
+### Error Handling
+Missing/corrupt artifacts block inference cleanly (HTTP 503), while invalid types are caught via strict Pydantic validation (HTTP 422). No fake fallbacks exist.
+
+### Regression
+Pytest suite confirmed no breakage in unrelated systems.
+
+### Production DB Preservation
+Confirmed `app.db` remained unmutated during ML training and inference testing (apart from explicit audit trail entries).
+
+### Browser Verification
+Scenarios A-F passed successfully in the browser, showing correct end-to-end performance without breaking the existing Resort 360 interface.
+
+### Build
+`npm run build` executed and passed cleanly.
+
+## Limitations
+
+- The model was trained on the public hospitality Hotel Booking Demand dataset.
+- It was **not** trained on Smart Resort historical bookings.
+- The current prediction is purely advisory.
+- The model probability should not automatically be interpreted as calibrated confidence.
+- Global feature importance is not the same as a per-prediction causal explanation.
 
 ## Final Status
-`ML MODEL INTEGRATED — READY FOR NEXT DATA SCIENCE ITERATION`
+
+`CANCELLATION ML VERIFIED — READY FOR NEXT DATA SCIENCE MODEL`

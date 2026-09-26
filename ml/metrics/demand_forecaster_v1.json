@@ -1,0 +1,220 @@
+{
+    "model_name": "Smart Resort 360 Demand Forecaster",
+    "model_version": "v1.0",
+    "algorithm": "RandomForest",
+    "dataset_source": "Public Hotel Booking Demand (Nuno Antonio et al.)",
+    "dataset_path": "ml/dataset/hotel_bookings.csv",
+    "target_definition": "daily_demand = COUNT of non-cancelled bookings (is_canceled==0) grouped by arrival_date across both hotel types combined.",
+    "hotel_type_decision": "COMBINED (v1 benchmark)",
+    "hotel_type_correlation": 0.2122,
+    "training_date_range": "2015-08-04 to 2017-01-15",
+    "validation_date_range": "2017-01-16 to 2017-05-09",
+    "test_date_range": "2017-05-10 to 2017-08-31",
+    "training_rows": 531,
+    "validation_rows": 114,
+    "test_rows": 114,
+    "features": [
+        "day_of_week",
+        "day_of_month",
+        "week_of_year",
+        "month",
+        "quarter",
+        "is_weekend",
+        "is_monday",
+        "is_friday",
+        "seasonal_period",
+        "lag_7",
+        "lag_14",
+        "lag_28",
+        "rolling_mean_7",
+        "rolling_mean_14",
+        "rolling_mean_28",
+        "rolling_std_7",
+        "rolling_std_14",
+        "rolling_std_28",
+        "recent_trend"
+    ],
+    "feature_count": 19,
+    "random_seed": 42,
+    "baselines": {
+        "seasonal_naive_lag7": {
+            "val": {
+                "mae": 29.026315789473685,
+                "rmse": 37.79457400952422,
+                "mape": 28.922331987096904,
+                "r2": -0.837112961937243
+            },
+            "test": {
+                "mae": 21.57017543859649,
+                "rmse": 26.903172707961154,
+                "mape": 20.38137327274842,
+                "r2": -0.6958582224366476
+            }
+        },
+        "rolling_mean_7": {
+            "val": {
+                "mae": 21.507518796992482,
+                "rmse": 28.069491409943453,
+                "mape": 21.34612470910893,
+                "r2": -0.013318658508081782
+            },
+            "test": {
+                "mae": 16.172932330827063,
+                "rmse": 21.222146927894556,
+                "mape": 15.778074143203872,
+                "r2": -0.055264130069130335
+            }
+        }
+    },
+    "all_models": {
+        "RandomForest": {
+            "val": {
+                "mae": 20.985201228784042,
+                "rmse": 27.657977829049237,
+                "mape": 21.463481428151564,
+                "r2": 0.01617512209670191
+            },
+            "test": {
+                "mae": 16.72615687509518,
+                "rmse": 21.077091075716773,
+                "mape": 16.01211470022815,
+                "r2": -0.04088772367919513
+            },
+            "train_seconds": 0.456976
+        },
+        "HistGradientBoosting": {
+            "val": {
+                "mae": 21.063408990015233,
+                "rmse": 28.219632171352064,
+                "mape": 21.12951782582453,
+                "r2": -0.024187920391999684
+            },
+            "test": {
+                "mae": 18.782666071894095,
+                "rmse": 23.901636053222717,
+                "mape": 17.589211794427023,
+                "r2": -0.3385598693263887
+            },
+            "train_seconds": 0.736659
+        },
+        "GradientBoosting": {
+            "val": {
+                "mae": 20.881397858860872,
+                "rmse": 26.946747410956153,
+                "mape": 21.23970081815609,
+                "r2": 0.0661230528064487
+            },
+            "test": {
+                "mae": 17.159748207962643,
+                "rmse": 22.133656866825167,
+                "mape": 16.13214758719244,
+                "r2": -0.1478599097417892
+            },
+            "train_seconds": 0.891978
+        }
+    },
+    "best_model": "RandomForest",
+    "selection_criterion": "RandomForest selected as the ML model for deployment: strongest ML performance and lowest RMSE among ML models (21.08 vs 21.22 for RollingMean7). Rolling Mean 7 remains the strongest simple benchmark by MAE (16.17 vs RF MAE 16.73). RandomForest beats Seasonal Naive on MAE. RandomForest does NOT beat Rolling Mean 7 on MAE.",
+    "metrics": {
+        "validation": {
+            "mae": 20.985201228784042,
+            "rmse": 27.657977829049237,
+            "mape": 21.463481428151564,
+            "r2": 0.01617512209670191
+        },
+        "test": {
+            "mae": 16.72615687509518,
+            "rmse": 21.077091075716773,
+            "mape": 16.01211470022815,
+            "r2": -0.04088772367919513
+        }
+    },
+    "feature_importance": [
+        {
+            "feature": "rolling_mean_14",
+            "importance": 0.242069
+        },
+        {
+            "feature": "lag_7",
+            "importance": 0.146082
+        },
+        {
+            "feature": "lag_14",
+            "importance": 0.086608
+        },
+        {
+            "feature": "rolling_std_28",
+            "importance": 0.086491
+        },
+        {
+            "feature": "rolling_std_14",
+            "importance": 0.077332
+        },
+        {
+            "feature": "lag_28",
+            "importance": 0.053125
+        },
+        {
+            "feature": "rolling_std_7",
+            "importance": 0.045935
+        },
+        {
+            "feature": "recent_trend",
+            "importance": 0.044276
+        },
+        {
+            "feature": "rolling_mean_7",
+            "importance": 0.043951
+        },
+        {
+            "feature": "week_of_year",
+            "importance": 0.038697
+        },
+        {
+            "feature": "rolling_mean_28",
+            "importance": 0.037154
+        },
+        {
+            "feature": "day_of_month",
+            "importance": 0.034536
+        },
+        {
+            "feature": "day_of_week",
+            "importance": 0.02611
+        },
+        {
+            "feature": "month",
+            "importance": 0.0115
+        },
+        {
+            "feature": "seasonal_period",
+            "importance": 0.007758
+        },
+        {
+            "feature": "is_friday",
+            "importance": 0.006657
+        },
+        {
+            "feature": "is_monday",
+            "importance": 0.00625
+        },
+        {
+            "feature": "is_weekend",
+            "importance": 0.003777
+        },
+        {
+            "feature": "quarter",
+            "importance": 0.001692
+        }
+    ],
+    "forecast_horizon": "7-day-ahead",
+    "leakage_prevention": "All lag and rolling features use shift(7) minimum. lag_1 excluded from 7-day-ahead model.",
+    "india_caveat": "Trained on European hotel data. Seasonal patterns are European. Indian coastal resort seasonality is inverted. Do NOT deploy for Indian property forecasting without retraining on India data.",
+    "festival_caveat": "Dataset contains NO explicit festival/holiday labels. The model has NOT learned any festival demand effects. Event signals belong to a future event-aware planning layer.",
+    "training_timestamp": "2026-09-26T16:10:18.880025",
+    "python_version": "3.14.3",
+    "artifact_path": "ml/models/demand_forecaster_v1.joblib",
+    "best_model_category": "best ML model",
+    "best_overall_by_mae": "rolling_mean_7",
+    "hotel_type_note": "v1 benchmark aggregates both City Hotel and Resort Hotel daily confirmed arrivals. Empirical correlation between the two hotel types is r=0.212 (weak), suggesting separate models would be more appropriate. Separate hotel-type modeling is recommended for v2. For a resort-focused India deployment, property-specific data should be used."
+}

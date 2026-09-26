@@ -31,10 +31,10 @@ def room_match(payload: RoomMatchRequest, db: Session = Depends(get_db)):
             details_json={
                 "source": "algorithmic",
                 "algorithm": "multi-attribute_matching",
-                "prediction": [r.room.room_type for r in response.recommendations] if response.recommendations else [],
-                "confidence": response.recommendations[0].match_score if response.recommendations else 0.0,
+                "prediction": [r.room_type for r in response.matches] if response.matches else [],
+                "confidence": response.matches[0].match_score if response.matches else 0.0,
                 "evidence": f"Query: {payload.query.strip()}",
-                "reasoning": response.recommendations[0].explanation if response.recommendations else "No matching rooms."
+                "reasoning": response.matches[0].explanation if response.matches else "No matching rooms."
             },
             created_at=datetime.datetime.now(datetime.timezone.utc)
         )

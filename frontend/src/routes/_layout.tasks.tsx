@@ -24,10 +24,14 @@ interface Task {
   status: TaskStatus
   createdAt: string
   dueAt: string
-  slaStatus: string
+  slaStatus?: string | null
+  minutesRemaining?: number | null
+  minutesOverdue?: number | null
+  minutesInactive?: number | null
   assignmentScore?: number
   completionNotes?: string
   completionProofPath?: string
+  complaintPhotoPath?: string
   _rawId: number
 }
 
@@ -59,7 +63,10 @@ function mapApiToTask(tData: TaskResponse): Task {
     status:          statusMap[tData.status] ?? 'Created',
     createdAt:       tData.created_at,
     dueAt:           new Date(new Date(tData.created_at).getTime() + 60 * 60 * 1000).toISOString(),
-    slaStatus:       'on_track',
+    slaStatus:       tData.sla_status,
+    minutesRemaining: tData.minutes_remaining,
+    minutesOverdue:  tData.minutes_overdue,
+    minutesInactive: tData.minutes_inactive,
     assignmentScore: latestAssignment?.score != null ? Math.round(latestAssignment.score) : undefined,
     completionNotes: tData.completion_proofs && tData.completion_proofs.length > 0
                        ? 'Completion proof provided.'
@@ -67,6 +74,7 @@ function mapApiToTask(tData: TaskResponse): Task {
     completionProofPath: tData.completion_proofs && tData.completion_proofs.length > 0
                            ? tData.completion_proofs[tData.completion_proofs.length - 1].photo_path
                            : undefined,
+    complaintPhotoPath: tData.complaint_photo_path || undefined,
     _rawId:          tData.id,
   }
 }
@@ -94,17 +102,48 @@ function getStatusBadge(s: TaskStatus): string {
   }
 }
 
-function getSLAIndicator(sla: string): React.ReactElement | null {
-  switch (sla) {
-    case 'on_track':
-      return <span className="flex items-center text-green-600 text-xs"><div className="h-2 w-2 rounded-full bg-green-500 mr-1" /> On Track</span>
-    case 'at_risk':
-      return <span className="flex items-center text-orange-600 text-xs"><div className="h-2 w-2 rounded-full bg-orange-500 mr-1" /> At Risk</span>
-    case 'breached':
-      return <span className="flex items-center text-red-600 text-xs"><div className="h-2 w-2 rounded-full bg-red-500 mr-1" /> Breached</span>
-    default:
-      return null
+function getSLAIndicator(task: Task): React.ReactElement | null {
+  if (task.status !== 'Assigned' && task.status !== 'In Progress') {
+    return null;
   }
+  
+  if (task.slaStatus === 'on_track') {
+    return (
+      <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 text-[10px] uppercase font-semibold whitespace-nowrap">
+        <div className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5 inline-block" />
+        ON TRACK {task.minutesRemaining != null ? `— ${task.minutesRemaining} min remaining` : ''}
+      </Badge>
+    );
+  }
+  
+  if (task.slaStatus === 'at_risk') {
+    return (
+      <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200 text-[10px] uppercase font-semibold whitespace-nowrap">
+        <div className="h-1.5 w-1.5 rounded-full bg-yellow-500 mr-1.5 inline-block" />
+        AT RISK {task.minutesRemaining != null ? `— ${task.minutesRemaining} min remaining` : ''}
+      </Badge>
+    );
+  }
+  
+  if (task.slaStatus === 'stalled') {
+    return (
+      <Badge variant="outline" className="bg-orange-50 text-orange-800 border-orange-200 text-[10px] uppercase font-semibold whitespace-nowrap">
+        <div className="h-1.5 w-1.5 rounded-full bg-orange-500 mr-1.5 inline-block" />
+        STALLED {task.minutesInactive != null ? `— no activity for ${task.minutesInactive} min` : ''}
+      </Badge>
+    );
+  }
+  
+  if (task.slaStatus === 'overdue') {
+    return (
+      <Badge variant="outline" className="bg-red-50 text-red-800 border-red-200 text-[10px] uppercase font-semibold whitespace-nowrap">
+        <div className="h-1.5 w-1.5 rounded-full bg-red-500 mr-1.5 inline-block" />
+        OVERDUE {task.minutesOverdue != null ? `— by ${task.minutesOverdue} min` : ''}
+      </Badge>
+    );
+  }
+  
+  return null;
 }
 
 // ── Page component ───────────────────────────────────────────────────────────
@@ -202,7 +241,7 @@ function TasksPage() {
                       <td className="p-3">
                         <Badge className={getStatusBadge(task.status)}>{task.status}</Badge>
                       </td>
-                      <td className="p-3">{getSLAIndicator(task.slaStatus)}</td>
+                      <td className="p-3">{getSLAIndicator(task)}</td>
                       <td className="p-3">
                         <Dialog>
                           <DialogTrigger asChild>
@@ -226,6 +265,15 @@ function TasksPage() {
                                   <div className="text-sm">
                                     <span className="text-muted-foreground">Skill Required:</span> {task.skill}
                                   </div>
+                                  {task.complaintPhotoPath && (
+                                    <div className="mt-2 h-32 bg-muted rounded flex items-center justify-center border-dashed border-2 overflow-hidden">
+                                      <img
+                                        src={`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'}/${task.complaintPhotoPath}`}
+                                        alt="Complaint Photo"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div className="border rounded-md p-3 space-y-2">
@@ -253,7 +301,7 @@ function TasksPage() {
                                     <span className="text-muted-foreground">Due At:</span>{' '}
                                     {new Date(task.dueAt).toLocaleTimeString()}
                                   </div>
-                                  <div className="mt-1">{getSLAIndicator(task.slaStatus)}</div>
+                                  <div className="mt-1">{getSLAIndicator(task)}</div>
                                 </div>
 
                                 <div className="border rounded-md p-3 space-y-2">

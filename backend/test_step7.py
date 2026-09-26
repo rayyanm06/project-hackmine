@@ -88,7 +88,7 @@ def test_audit_log_created_and_deduplicated(test_db):
     The FastAPI dependency override ensures the route uses this same session.
     """
     initial_count = test_db.query(AuditLog).filter(
-        AuditLog.action == "next_best_action_generated"
+        AuditLog.action == "NEXT_BEST_ACTION"
     ).count()
     assert initial_count == 0  # fresh isolated DB starts empty
 
@@ -97,7 +97,7 @@ def test_audit_log_created_and_deduplicated(test_db):
     assert response1.status_code == 200
 
     first_call_count = test_db.query(AuditLog).filter(
-        AuditLog.action == "next_best_action_generated"
+        AuditLog.action == "NEXT_BEST_ACTION"
     ).count()
     assert first_call_count == initial_count + 1
 
@@ -106,6 +106,6 @@ def test_audit_log_created_and_deduplicated(test_db):
     assert response2.status_code == 200
 
     second_call_count = test_db.query(AuditLog).filter(
-        AuditLog.action == "next_best_action_generated"
+        AuditLog.action == "NEXT_BEST_ACTION"
     ).count()
     assert second_call_count == first_call_count

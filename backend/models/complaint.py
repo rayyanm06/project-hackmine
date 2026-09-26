@@ -11,6 +11,8 @@ class Complaint(Base):
     room_number = Column(Integer)
     text = Column(String)
     language = Column(String)
+    photo_path = Column(String, nullable=True)
+    request_category = Column(String, default="complaint")  # complaint or service_request
     status = Column(String, default="submitted")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)

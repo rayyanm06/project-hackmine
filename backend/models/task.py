@@ -14,6 +14,7 @@ class Task(Base):
     location = Column(String, nullable=True)
     required_skill_id = Column(Integer, ForeignKey("skills.id"), nullable=True)
     status = Column(String, default="created")
+    last_recorded_sla_status = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -22,3 +23,7 @@ class Task(Base):
     assignments = relationship("Assignment", back_populates="task")
     status_history = relationship("TaskStatusHistory", back_populates="task")
     completion_proofs = relationship("CompletionProof", back_populates="task")
+
+    @property
+    def complaint_photo_path(self):
+        return self.complaint.photo_path if self.complaint else None

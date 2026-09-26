@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 class CancellationPredictionRequest(BaseModel):
     lead_time: int = 0
@@ -40,3 +40,24 @@ class CancellationPredictionResponse(BaseModel):
     dataset_source: str
     evaluation_metrics: Dict[str, Any]
     key_input_features: Dict[str, Any]
+
+class EventSignal(BaseModel):
+    name: str
+    category: str
+    importance: str
+
+class DailyDemandForecast(BaseModel):
+    date: str
+    predicted_demand: int
+    event: Optional[EventSignal] = None
+    planning_signal: Optional[str] = None
+
+class DemandForecastResponse(BaseModel):
+    model_name: str
+    model_version: str
+    horizon_days: int
+    forecast: List[DailyDemandForecast]
+    source: str
+    disclaimer: str
+    metrics: Dict[str, Any]
+    explanation: List[str]

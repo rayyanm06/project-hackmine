@@ -5,11 +5,15 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { format } from 'date-fns'
 import {
   AlertTriangle, BrainCircuit, Activity, Users, BedDouble,
   RefreshCw, Info, CheckCircle2, Clock, UserCircle2,
-  LineChart, ArrowRight, Sparkles
+  LineChart, ArrowRight, Sparkles, TrendingUp, CalendarDays, CalendarIcon
 } from 'lucide-react'
 import {
   api,
@@ -19,6 +23,7 @@ import {
   type TaskResponse,
   type RecommendationResponse,
   type SystemicIssueResponse,
+  type DemandForecastResponse,
 } from '@/lib/api'
 
 export const Route = createFileRoute('/_layout/resort-360')({
@@ -81,40 +86,60 @@ function Resort360Page() {
   const [staff,   setStaff]   = useState<StaffMemberResponse[]>([])
   const [rooms,   setRooms]   = useState<RoomResponse[]>([])
   const [tasks,   setTasks]   = useState<TaskResponse[]>([])
+  const [attentionTasks, setAttentionTasks] = useState<TaskResponse[]>([])
   const [nextAction, setNextAction] = useState<RecommendationResponse | null>(null)
   const [systemicIssues, setSystemicIssues] = useState<SystemicIssueResponse | null>(null)
+  const [forecast, setForecast] = useState<DemandForecastResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [viewDate, setViewDate] = useState<Date>(new Date())
+
+  // Reassign modal state
+  const [reassignTask, setReassignTask] = useState<TaskResponse | null>(null)
+  const [candidates, setCandidates] = useState<any[]>([])
+  const [candidatesLoading, setCandidatesLoading] = useState(false)
+  const [candidatesEmptyReason, setCandidatesEmptyReason] = useState<string | null>(null)
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null)
+  const [reassigning, setReassigning] = useState(false)
+  const [reassignSuccess, setReassignSuccess] = useState<string | null>(null)
+  const [reassignError, setReassignError] = useState<string | null>(null)
 
   const loadAll = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      const [statsData, staffData, roomsData, tasksData, nextActionData, systemicIssuesData] = await Promise.all([
+      const [statsData, staffData, roomsData, tasksData, attentionTasksData, nextActionData, systemicIssuesData, forecastData] = await Promise.all([
         api.getStats(),
         api.getStaff(),
-        api.getRooms(),
+        api.getRooms(format(viewDate, 'yyyy-MM-dd')),
         api.getTasks(),
+        api.getAttentionTasks(),
         api.getNextAction(),
         api.getSystemicIssues().catch(e => {
           console.error("Systemic issues load error:", e);
           return { issues: [] };
+        }),
+        api.getDemandForecast().catch(e => {
+          console.error("Demand forecast load error:", e);
+          return { _error: e.message || "Demand forecast unavailable" } as any;
         })
       ])
       setStats(statsData)
       setStaff(staffData)
       setRooms(roomsData)
       setTasks(tasksData)
+      setAttentionTasks(attentionTasksData)
       setNextAction(nextActionData)
       setSystemicIssues(systemicIssuesData)
+      setForecast(forecastData)
       setLastRefresh(new Date())
     } catch (err: any) {
       setError(err.message || 'Failed to load resort data')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [viewDate])
 
   useEffect(() => { loadAll() }, [loadAll])
 
@@ -125,8 +150,14 @@ function Resort360Page() {
     return acc
   }, {} as Record<string, number>)
 
+  const bookingCounts = rooms.reduce((acc, r) => {
+    const st = r.booking_status || 'available'
+    acc[st] = (acc[st] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+
   const occupancyPct = rooms.length > 0
-    ? Math.round((roomCounts.occupied || 0) / rooms.length * 100)
+    ? Math.round((bookingCounts.booked || 0) / rooms.length * 100)
     : 0
 
   // Active (non-closed) tasks sorted by priority
@@ -201,10 +232,150 @@ function Resort360Page() {
     )
   }
 
+  // ── Reassign helpers ─────────────────────────────────────────────────────
+  const openReassignModal = async (task: TaskResponse) => {
+    setReassignTask(task)
+    setSelectedStaffId(null)
+    setReassignSuccess(null)
+    setReassignError(null)
+    setCandidates([])
+    setCandidatesEmptyReason(null)
+    setCandidatesLoading(true)
+    try {
+      const data = await api.getReassignmentCandidates(task.id!)
+      setCandidates(data.candidates || [])
+      setCandidatesEmptyReason(data.empty_reason || null)
+    } catch (e: any) {
+      setCandidatesEmptyReason(e.message || 'Failed to load candidates')
+    } finally {
+      setCandidatesLoading(false)
+    }
+  }
+
+  const confirmReassign = async () => {
+    if (!reassignTask || selectedStaffId == null) return
+    setReassigning(true)
+    setReassignError(null)
+    try {
+      await api.reassignTask(reassignTask.id!, selectedStaffId)
+      const newStaff = candidates.find(c => c.staff_id === selectedStaffId)
+      setReassignSuccess(`Task reassigned to ${newStaff?.staff_name ?? 'new staff member'} successfully.`)
+      // Refresh attention list
+      const fresh = await api.getAttentionTasks()
+      setAttentionTasks(fresh)
+    } catch (e: any) {
+      setReassignError(e.message || 'Reassignment failed')
+    } finally {
+      setReassigning(false)
+    }
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
   return (
     <div className="p-6 space-y-6 min-h-screen">
 
+      {/* ── Reassign Modal ─────────────────────────────────────────────── */}
+      <Dialog open={!!reassignTask} onOpenChange={(open) => { if (!open) { setReassignTask(null); setReassignSuccess(null); } }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-indigo-600" />
+              Reassign Task: {reassignTask?.location} — {reassignTask?.issue_type}
+            </DialogTitle>
+            <DialogDescription>
+              Select a qualified staff member. Current assignee: <strong>{reassignTask?.staff_name ?? 'Unknown'}</strong>
+              {reassignTask?.reason && (
+                <span className="block mt-1 text-xs text-orange-700 bg-orange-50 p-2 rounded border border-orange-100">
+                  <strong>SLA Status:</strong> {reassignTask.sla_status?.toUpperCase()} — {reassignTask.reason}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto">
+            {reassignSuccess ? (
+              <div className="flex flex-col items-center py-8 text-center text-green-700 bg-green-50 rounded-md border border-green-100">
+                <CheckCircle2 className="h-10 w-10 mb-3 text-green-500" />
+                <p className="font-semibold">{reassignSuccess}</p>
+                <Button className="mt-4" variant="outline" size="sm" onClick={() => setReassignTask(null)}>Close</Button>
+              </div>
+            ) : candidatesLoading ? (
+              <div className="text-center py-8 text-muted-foreground animate-pulse">Loading eligible candidates…</div>
+            ) : candidatesEmptyReason ? (
+              <div className="text-center py-8 text-orange-700 bg-orange-50 rounded-md border border-orange-100 p-4">
+                <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-orange-500" />
+                <p className="font-semibold">No Candidates Available</p>
+                <p className="text-sm mt-1">{candidatesEmptyReason}</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">{candidates.length} eligible candidate{candidates.length !== 1 ? 's' : ''}, ranked by assignment score:</p>
+                <div className="space-y-3">
+                  {candidates.map((c: any, idx: number) => (
+                    <div
+                      key={c.staff_id}
+                      onClick={() => setSelectedStaffId(c.staff_id)}
+                      className={`border rounded-md p-3 cursor-pointer transition-colors ${
+                        selectedStaffId === c.staff_id
+                          ? 'border-indigo-400 bg-indigo-50'
+                          : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                            selectedStaffId === c.staff_id ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
+                          }`}>
+                            {selectedStaffId === c.staff_id && <div className="h-2 w-2 rounded-full bg-white" />}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-sm">{idx + 1}. {c.staff_name}</span>
+                            <span className="text-xs text-muted-foreground ml-2">{c.department}</span>
+                          </div>
+                        </div>
+                        <Badge className="bg-indigo-100 text-indigo-800 font-mono text-xs">
+                          Score: {(c.score * 100).toFixed(1)}/100
+                        </Badge>
+                      </div>
+                      {/* Score breakdown (mirrors existing explainability style) */}
+                      <div className="mt-2 pt-2 border-t grid grid-cols-5 gap-1 text-[11px] text-slate-600">
+                        {['skill_match', 'workload', 'availability', 'priority', 'recency'].map(key => (
+                          <div key={key} className="text-center">
+                            <div className="font-semibold text-slate-500 uppercase tracking-wide" style={{fontSize: '9px'}}>{key.replace('_', ' ')}</div>
+                            <div className="font-bold text-slate-800">{((c.score_breakdown[key] ?? 0) * 100).toFixed(0)}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-1.5 text-xs text-muted-foreground">{c.reasoning}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {reassignError && (
+                  <div className="text-sm text-red-700 bg-red-50 p-3 rounded-md border border-red-200">
+                    {reassignError}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setReassignTask(null)}>Cancel</Button>
+                  <Button
+                    disabled={selectedStaffId == null || reassigning}
+                    onClick={confirmReassign}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    {reassigning ? 'Reassigning…' : 'Confirm Reassignment'}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Header ─────────────────────────────────────────────────────── */}
+
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Resort 360</h1>
@@ -264,7 +435,7 @@ function Resort360Page() {
           value={`${occupancyPct}%`}
           icon={<BedDouble className="h-4 w-4" />}
           color="text-blue-700"
-          sub={`${roomCounts.occupied || 0} of ${rooms.length} rooms (demo)`}
+          sub={`${bookingCounts.booked || 0} of ${rooms.length} rooms booked`}
         />
       </div>
 
@@ -312,6 +483,80 @@ function Resort360Page() {
             </Card>
           )}
 
+          {/* Task Attention Required */}
+          <Card className="border-red-200 shadow-sm">
+            <CardHeader className="pb-3 bg-red-50/50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-red-700">
+                  <AlertTriangle className="h-5 w-5" />
+                  Task Attention Required
+                </CardTitle>
+                <Badge variant="outline" className="bg-white text-xs text-red-700 border-red-200">
+                  SLA / Escalation
+                </Badge>
+              </div>
+              <CardDescription className="text-red-700/80">Tasks requiring immediate manager intervention</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {attentionTasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center text-green-700 bg-green-50 rounded-md border border-green-100">
+                  <CheckCircle2 className="h-8 w-8 mb-2 text-green-500" />
+                  <p className="font-semibold text-sm">No tasks currently require attention.</p>
+                  <p className="text-xs mt-1 text-green-600">All tasks are progressing within SLAs.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {attentionTasks.map((t, idx) => (
+                    <div key={idx} className="flex flex-col border rounded-md overflow-hidden text-sm relative">
+                      <div className="bg-slate-50 p-3 border-b flex justify-between items-center">
+                        <div className="font-semibold">
+                          Room {t.location} — {t.issue_type}
+                        </div>
+                        <Badge className={
+                          t.sla_status === 'overdue' ? 'bg-red-100 text-red-800' :
+                          t.sla_status === 'stalled' ? 'bg-orange-100 text-orange-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }>
+                          {t.sla_status === 'overdue' ? '🔴 Overdue' :
+                           t.sla_status === 'stalled' ? '🟠 Stalled' :
+                           '🟡 At Risk'}
+                        </Badge>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Assigned To:</span>
+                          <span className="font-medium">{t.staff_name || 'Unassigned'} ({t.status.replace('_', ' ')})</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">SLA Timing:</span>
+                          <span className="font-medium">
+                            {t.minutes_overdue !== undefined && t.minutes_overdue !== null ? `${t.minutes_overdue}m overdue` :
+                             t.minutes_inactive !== undefined && t.minutes_inactive !== null ? `Inactive for ${t.minutes_inactive}m` :
+                             t.minutes_remaining !== undefined && t.minutes_remaining !== null ? `${t.minutes_remaining}m remaining` :
+                             'Unknown'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <div className="text-slate-700 bg-slate-50 p-2 rounded text-xs border flex-1 mr-4">
+                            <strong>Reason:</strong> {t.reason}
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="shrink-0"
+                            onClick={() => openReassignModal(t)}
+                          >
+                            Reassign
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Room Overview */}
           <Card>
             <CardHeader className="pb-3">
@@ -321,50 +566,206 @@ function Resort360Page() {
                     <BedDouble className="h-5 w-5 text-muted-foreground" />
                     Room Overview
                   </CardTitle>
-                  <CardDescription>Current room statuses</CardDescription>
+                  <CardDescription>Date-aware booking occupancy</CardDescription>
                 </div>
-                <div className="flex items-center text-xs text-muted-foreground gap-1 border rounded px-2 py-1 bg-blue-50 text-blue-700 border-blue-200">
-                  <Info className="h-3 w-3" />
-                  Demo / Seeded Data
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium">View Date:</div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-[140px] pl-3 text-left font-normal h-8">
+                        {format(viewDate, "dd MMM yyyy")}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={viewDate}
+                        onSelect={(date) => date && setViewDate(date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Status summary row */}
-              <div className="grid grid-cols-4 gap-3">
-                {(['occupied', 'available', 'cleaning', 'maintenance'] as const).map(status => (
-                  <div key={status} className="border rounded-md p-3 text-center">
-                    <div className={`text-xl font-bold ${
-                      status === 'occupied'    ? 'text-blue-700'   :
-                      status === 'available'   ? 'text-green-700'  :
-                      status === 'cleaning'    ? 'text-yellow-700' :
-                                                 'text-red-700'
-                    }`}>
-                      {roomCounts[status] || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground capitalize mt-0.5">{status}</div>
-                  </div>
-                ))}
+              {/* Status summary */}
+              <div className="flex flex-col gap-2 bg-slate-50 p-3 rounded-md border">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-semibold text-slate-700">Booking Occupancy:</span>
+                  <span className="font-medium text-slate-900">{bookingCounts.booked || 0} Booked · {bookingCounts.available || rooms.length} Available</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500">Housekeeping:</span>
+                  <span className="text-slate-600">
+                    {roomCounts.occupied || 0} Occupied · {roomCounts.cleaning || 0} Cleaning · {roomCounts.maintenance || 0} Maintenance · {roomCounts.available || 0} Available
+                  </span>
+                </div>
               </div>
 
-              {/* Room grid */}
-              <div className="grid grid-cols-5 gap-1.5">
-                {rooms.map(room => (
-                  <div
-                    key={room.id}
-                    className={`rounded text-center py-1.5 px-1 text-xs font-medium border ${
-                      room.status === 'occupied'    ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                      room.status === 'available'   ? 'bg-green-50 border-green-200 text-green-700' :
-                      room.status === 'cleaning'    ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
-                                                      'bg-red-50 border-red-200 text-red-700'
-                    }`}
-                    title={`Room ${room.room_number} — ${room.room_type} — ${room.status}`}
-                  >
-                    <div className="font-bold">{room.room_number}</div>
-                    <div className="text-[10px] opacity-80 capitalize">{room.status.slice(0,4)}</div>
-                  </div>
-                ))}
+              {/* Room grid grouped by floor */}
+              <div className="space-y-5">
+                {[1, 2, 3, 4].map(floor => {
+                  const floorRooms = rooms.filter(r => r.floor === floor || Math.floor(r.room_number / 100) === floor);
+                  if (floorRooms.length === 0) return null;
+                  return (
+                    <div key={floor}>
+                      <h4 className="text-xs font-semibold mb-2 text-slate-500 uppercase tracking-wider border-b pb-1">Floor {floor}</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                        {floorRooms.map(room => {
+                          const isBooked = room.booking_status === 'booked';
+                          
+                          const statusColors = {
+                            occupied: 'bg-red-50 border-red-200 text-red-900',
+                            cleaning: 'bg-orange-50 border-orange-200 text-orange-900',
+                            maintenance: 'bg-purple-50 border-purple-200 text-purple-900',
+                            available: 'bg-green-50 border-green-200 text-green-900',
+                            booked: 'bg-red-50 border-red-200 text-red-900'
+                          };
+                          const statusIcons = {
+                            occupied: '🔴',
+                            cleaning: '🟠',
+                            maintenance: '🟣',
+                            available: '🟢',
+                            booked: '🔴'
+                          };
+                          
+                          const primaryStatus = isBooked ? 'booked' : room.status;
+                          
+                          return (
+                          <div
+                            key={room.id}
+                            className={`rounded-md p-2.5 border shadow-sm flex flex-col justify-between ${statusColors[primaryStatus as keyof typeof statusColors] || statusColors.available}`}
+                          >
+                            <div>
+                              <div className="font-bold text-sm">Room {room.room_number}</div>
+                              <div className="text-[11px] opacity-80 font-medium mb-1.5">{room.room_type}</div>
+                              
+                              {isBooked ? (
+                                <>
+                                  <div className="font-bold text-xs flex items-center gap-1">
+                                     🔴 Booked
+                                  </div>
+                                  <div className="text-[10px] font-medium opacity-90 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                                     {format(new Date(room.booking_check_in!), 'dd MMM')} → {format(new Date(room.booking_check_out!), 'dd MMM')}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="font-bold text-xs flex items-center gap-1 capitalize">
+                                     {statusIcons[room.status as keyof typeof statusIcons] || '🟢'} {room.status}
+                                  </div>
+                                  {room.status === 'cleaning' && (
+                                    <div className="text-[10px] font-medium opacity-90 mt-0.5">
+                                      {room.cleaning_minutes_remaining !== undefined && room.cleaning_minutes_remaining !== null 
+                                        ? (room.cleaning_minutes_remaining > 0 ? `${room.cleaning_minutes_remaining} min left` : 'Time exceeded')
+                                        : 'Awaiting completion'}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+
+                            <div className="text-[10px] mt-2.5 pt-1.5 border-t border-black/10">
+                               {isBooked ? (
+                                 <>Housekeeping: <span className="capitalize font-semibold text-slate-700">{room.status}</span></>
+                               ) : (
+                                 <>Booking: <span className="font-semibold text-green-700">Available</span></>
+                               )}
+                            </div>
+                          </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Demand Forecast */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-indigo-600" />
+                    7-Day Demand Forecast
+                  </CardTitle>
+                  <CardDescription>Predicted booking demand (rooms / day)</CardDescription>
+                </div>
+                <div className="flex items-center text-xs gap-1 border rounded px-2 py-1 bg-amber-50 text-amber-700 border-amber-200 font-medium">
+                  <Info className="h-3 w-3" />
+                  Model Demo
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(!forecast || (forecast as any)._error) ? (
+                <div className="text-sm text-red-600 bg-red-50 p-4 rounded-md border border-red-200 flex flex-col items-center justify-center text-center">
+                  <AlertTriangle className="h-6 w-6 mb-2 text-red-500" />
+                  <p className="font-semibold">Demand forecast unavailable</p>
+                  <p className="text-xs mt-1 text-red-500">
+                    {(forecast as any)?._error || "Failed to load forecast data from server."}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Primary disclaimer — must be visible at all times */}
+                  <div className="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-md flex items-start gap-2 border border-amber-200">
+                    <Info className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
+                    <div className="space-y-1">
+                      <p className="font-semibold">Model Demo — trained on public European hotel booking data</p>
+                      <p>Demo forecasts use simulated historical context because Smart Resort does not yet have sufficient historical booking data for this model. This does not represent Smart Resort actual demand.</p>
+                    </div>
+                  </div>
+
+                  {/* 7-day grid */}
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {forecast.forecast.map((day, idx) => (
+                      <div key={idx} className="flex flex-col border rounded-md overflow-hidden relative">
+                        <div className="bg-slate-50 text-center py-1 text-xs font-semibold text-slate-600 border-b">
+                          {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                        </div>
+                        <div className="text-center py-3 flex-1 flex flex-col justify-center">
+                          <span className="text-xl font-bold">{day.predicted_demand}</span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">est. rooms</span>
+                        </div>
+                        {day.event && (
+                          <div
+                            className="absolute top-1 right-1"
+                            title={`Event: ${day.event.name}`}
+                          >
+                            <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Planning Signals — only rendered if events overlap forecast window */}
+                  {forecast.forecast.some(d => d.planning_signal) && (
+                    <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-md">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CalendarDays className="h-4 w-4 text-indigo-700" />
+                        <span className="text-sm font-semibold text-indigo-900">Upcoming Events (Rule-Based Planning Signal)</span>
+                      </div>
+                      <ul className="text-sm text-indigo-800 space-y-1">
+                        {forecast.forecast.filter(d => d.planning_signal).map((d, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="font-medium whitespace-nowrap">
+                              {new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}:
+                            </span>
+                            <span>{d.planning_signal}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
 

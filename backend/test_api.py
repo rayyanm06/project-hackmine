@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from main import app
+from backend.main import app
 import json
 
 client = TestClient(app)
@@ -15,7 +15,7 @@ new_complaint = {
     "text": "The AC in my room is not working",
     "language": "en"
 }
-response = client.post("/api/complaints", json=new_complaint)
+response = client.post("/api/complaints", data=new_complaint)
 print(response.status_code, response.json())
 
 print("\n--- Testing GET /api/complaints ---")

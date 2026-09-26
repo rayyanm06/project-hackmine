@@ -23,12 +23,14 @@ GET /api/complaints/{id}  — single complaint (backward-compatible)
 import datetime
 import traceback
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from typing import List
+import os
+import shutil
 
 from backend.database import get_db
-from backend.models import Complaint, Task, Assignment, TaskStatusHistory, AuditLog, Skill
+from backend.models import Complaint, Task, Assignment, TaskStatusHistory, AuditLog, Skill, Notification
 from backend.schemas.complaint import (
     ComplaintCreate,
     ComplaintResponse,
@@ -49,7 +51,16 @@ VALID_LANGUAGES = {"en", "hi", "mr", "ta", "hinglish"}
 # ---------------------------------------------------------------------------
 
 @router.post("", response_model=ComplaintCreateResponse)
-def create_complaint(complaint: ComplaintCreate, db: Session = Depends(get_db)):
+def create_complaint(
+    guest_id: int = Form(...),
+    room_number: int = Form(...),
+    text: str = Form(...),
+    language: str = Form(...),
+    request_category: str = Form("complaint"),
+    photo: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    complaint = ComplaintCreate(guest_id=guest_id, room_number=room_number, text=text, language=language, request_category=request_category)
     # ── Validate ────────────────────────────────────────────────────────────
     if complaint.language not in VALID_LANGUAGES:
         raise HTTPException(status_code=400, detail=f"Invalid language. Allowed: {sorted(VALID_LANGUAGES)}")
@@ -62,11 +73,25 @@ def create_complaint(complaint: ComplaintCreate, db: Session = Depends(get_db)):
         room_number=complaint.room_number,
         text=complaint.text.strip(),
         language=complaint.language,
+        request_category=complaint.request_category,
         status="submitted",
     )
     db.add(db_complaint)
     db.commit()
     db.refresh(db_complaint)
+
+    if photo:
+        if not photo.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Photo must be an image file.")
+        
+        os.makedirs("uploads/complaints", exist_ok=True)
+        file_location = f"uploads/complaints/{db_complaint.id}_{photo.filename}"
+        with open(file_location, "wb") as buffer:
+            shutil.copyfileobj(photo.file, buffer)
+        
+        db_complaint.photo_path = file_location
+        db.commit()
+        db.refresh(db_complaint)
 
     task_id: int | None = None
     task_status: str | None = None
@@ -146,6 +171,14 @@ def create_complaint(complaint: ComplaintCreate, db: Session = Depends(get_db)):
                 old_status="created",
                 new_status="assigned",
             ))
+            
+            # Guest Notification
+            db.add(Notification(
+                guest_id=complaint.guest_id,
+                message="Your request has been accepted and assigned to our team.",
+                related_request_id=db_complaint.id
+            ))
+            
             db.commit()
 
             task_status = task.status
@@ -229,7 +262,9 @@ def create_complaint(complaint: ComplaintCreate, db: Session = Depends(get_db)):
         room_number=db_complaint.room_number,
         text=db_complaint.text,
         language=db_complaint.language,
+        request_category=db_complaint.request_category,
         status=db_complaint.status,
+        photo_path=db_complaint.photo_path,
         created_at=db_complaint.created_at,
         task_id=task_id,
         task_status=task_status,

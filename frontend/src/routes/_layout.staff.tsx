@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { User, Wrench, CheckCircle } from 'lucide-react'
 import { api, type StaffMemberResponse } from '@/lib/api'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_layout/staff')({
   component: StaffPage,
@@ -29,6 +30,27 @@ function StaffPage() {
   useEffect(() => {
     loadStaff()
   }, [loadStaff])
+
+  const handleToggleAvailability = async (id: number, currentAvailable: boolean) => {
+    const newAvailable = !currentAvailable;
+    
+    // Optimistic update
+    setStaff(prev => prev.map(s => 
+      s.id === id ? { ...s, available: newAvailable } : s
+    ));
+    
+    try {
+      await api.updateStaffAvailability(id, newAvailable);
+      toast.success(`Staff availability updated`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to update availability');
+      // Revert on error
+      setStaff(prev => prev.map(s => 
+        s.id === id ? { ...s, available: currentAvailable } : s
+      ));
+    }
+  }
 
   return (
     <div className="p-6 space-y-6 min-h-screen">
@@ -83,8 +105,11 @@ function StaffPage() {
                 </div>
 
                 <div className="pt-2 border-t flex justify-between items-center text-sm">
-                  <span className="font-medium">Force Available</span>
-                  <Switch checked={s.available} disabled />
+                  <span className="font-medium">Available</span>
+                  <Switch 
+                    checked={s.available} 
+                    onCheckedChange={() => handleToggleAvailability(s.id, s.available)}
+                  />
                 </div>
               </CardContent>
             </Card>
