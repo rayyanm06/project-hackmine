@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { VariantProps, cva } from 'class-variance-authority'
-import { PanelLeftIcon } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,7 @@ import {
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = '16rem'
+const SIDEBAR_WIDTH = '18rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
 const SIDEBAR_WIDTH_ICON = '3rem'
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
@@ -51,7 +51,7 @@ function useSidebar() {
 }
 
 function SidebarProvider({
-  defaultOpen = true,
+  defaultOpen = false,
   open: openProp,
   onOpenChange: setOpenProp,
   className,
@@ -160,7 +160,7 @@ function Sidebar({
   variant?: 'sidebar' | 'floating' | 'inset'
   collapsible?: 'offcanvas' | 'icon' | 'none'
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, open, setOpen, openMobile, setOpenMobile } = useSidebar()
 
   if (collapsible === 'none') {
     return (
@@ -203,37 +203,23 @@ function Sidebar({
   }
 
   return (
-    <div
-      className='group peer hidden text-sidebar-foreground md:block'
-      data-state={state}
-      data-collapsible={state === 'collapsed' ? collapsible : ''}
-      data-variant={variant}
-      data-side={side}
-      data-slot='sidebar'
-    >
-      {/* This is what handles the sidebar gap on desktop */}
-      <div
-        data-slot='sidebar-gap'
+    <>
+      {/* Subtle translucent backdrop when sidebar drawer is open on desktop */}
+      {open && (
+        <div
+          data-slot='sidebar-backdrop'
+          aria-hidden='true'
+          className='fixed inset-0 z-40 bg-slate-900/25 backdrop-blur-[2px] transition-opacity duration-300 ease-out cursor-pointer md:block hidden'
+          onClick={() => setOpen(false)}
+        />
+      )}
+      <aside
+        data-sidebar='sidebar'
+        data-state={open ? 'expanded' : 'collapsed'}
+        data-slot='sidebar'
         className={cn(
-          'relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear',
-          'group-data-[collapsible=offcanvas]:w-0',
-          'group-data-[side=right]:rotate-180',
-          variant === 'floating' || variant === 'inset'
-            ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]'
-            : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon)'
-        )}
-      />
-      <div
-        data-slot='sidebar-container'
-        className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[inset-inline,width] duration-200 ease-linear md:flex',
-          side === 'left'
-            ? 'inset-s-0 group-data-[collapsible=offcanvas]:-inset-s-[calc(var(--sidebar-width))]'
-            : 'inset-e-0 group-data-[collapsible=offcanvas]:-inset-e-[calc(var(--sidebar-width))]',
-          // Adjust the padding for floating and inset variants.
-          variant === 'floating' || variant === 'inset'
-            ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
-            : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-e group-data-[side=right]:border-s',
+          'fixed inset-y-0 left-0 z-50 hidden h-svh w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground shadow-2xl border-r border-sidebar-border transition-transform duration-300 ease-out md:flex',
+          open ? 'translate-x-0' : '-translate-x-full',
           className
         )}
         {...props}
@@ -241,12 +227,12 @@ function Sidebar({
         <div
           data-sidebar='sidebar'
           data-slot='sidebar-inner'
-          className='flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-sm'
+          className='flex h-full w-full flex-col bg-sidebar'
         >
           {children}
         </div>
-      </div>
-    </div>
+      </aside>
+    </>
   )
 }
 
@@ -261,17 +247,21 @@ function SidebarTrigger({
     <Button
       data-sidebar='trigger'
       data-slot='sidebar-trigger'
-      variant='ghost'
+      variant='outline'
       size='icon'
-      className={cn('size-7', className)}
+      className={cn(
+        'size-10 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 text-[#2D8CFF] hover:text-[#1A7BFA] hover:bg-sky-50/70 hover:border-[#2D8CFF]/50 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-center shrink-0',
+        className
+      )}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
       }}
+      aria-label='Toggle Operations Menu'
       {...props}
     >
-      <PanelLeftIcon />
-      <span className='sr-only'>Toggle Sidebar</span>
+      <Menu className='size-5 text-[#2D8CFF]' />
+      <span className='sr-only'>Toggle Operations Menu</span>
     </Button>
   )
 }
@@ -311,8 +301,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot='sidebar-inset'
       className={cn(
-        'relative flex w-full flex-1 flex-col bg-background',
-        'md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ms-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ms-2',
+        'relative flex w-full flex-1 flex-col bg-background min-h-screen',
         className
       )}
       {...props}
