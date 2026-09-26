@@ -15,4 +15,4 @@
  *      --font-roboto: 'Roboto', sans-serif;
  *   }
  */
-export const fonts = ['cormorant', 'inter', 'manrope', 'system'] as const
+export const fonts = ['inter', 'manrope', 'cormorant', 'system'] as const

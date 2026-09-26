@@ -47,19 +47,18 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     if (prefersReducedMotion) {
-      // Instantly show everything without animation
       return
     }
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: 'power2.out' } })
 
-      // 1. Hero image softly appears and gently settles from 1.03 -> 1.00
+      // 1. Hero image softly appears and gently settles
       if (heroImgRef.current) {
         tl.fromTo(
           heroImgRef.current,
-          { scale: 1.032, opacity: 0.82 },
-          { scale: 1.0, opacity: 1, duration: 3.2, ease: 'power2.out' }
+          { scale: 1.03, opacity: 0.85 },
+          { scale: 1.0, opacity: 1, duration: 3.0, ease: 'power2.out' }
         )
       }
 
@@ -119,7 +118,7 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
           metricsRef.current,
           { y: 16, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.8 },
-          1.4
+          1.35
         )
       }
     })
@@ -134,11 +133,10 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-revealed')
-            observer.unobserve(entry.target)
           }
         })
       },
-      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.15 }
     )
 
     const revealElements = document.querySelectorAll('.resort-reveal-item')
@@ -152,22 +150,22 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
   }
 
   return (
-    <div className="relative w-full min-h-screen bg-[#faf8f4] text-[#2c2419] overflow-x-hidden font-sans">
-      {/* ── Sticky Luxury Navbar ─────────────────────────────────── */}
+    <div className="relative w-full min-h-screen bg-[#FAF9F6] text-[#1C2321] overflow-x-hidden selection:bg-[#EBF2ED] selection:text-[#25372B]">
+      {/* ── Fixed Top Header ─────────────────────────────────────── */}
       <header
         ref={navRef}
-        className={`sticky top-0 z-40 transition-all duration-300 w-full ${
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-400 ${
           isScrolled
-            ? 'bg-[#faf8f4]/90 backdrop-blur-md border-b border-[#e6dcce] shadow-[0_2px_16px_rgba(44,36,25,0.04)] py-3.5'
-            : 'bg-white/40 backdrop-blur-sm border-b border-white/20 py-5'
+            ? 'bg-[#FAF9F6]/90 backdrop-blur-md border-b border-[#E5E0D8] shadow-[0_4px_20px_rgba(28,35,33,0.04)] py-4'
+            : 'bg-transparent py-6'
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 sm:px-12 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-[#f5ebd7] to-[#e8d8be] border border-[#d4bc94]/70 shadow-[0_2px_8px_rgba(180,140,75,0.18)]">
+          {/* Brand Logo & Lotus Emblem */}
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#EBF2ED] border border-[#C6D8CC] shadow-xs">
               <svg
-                className="w-4.5 h-4.5 text-[#8c672b]"
+                className="w-5 h-5 text-[#3D5A45]"
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
@@ -182,35 +180,35 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
                 />
               </svg>
             </div>
-            <span className="font-serif text-lg tracking-wider text-[#352b1e] font-semibold">
+            <span className="text-lg tracking-tight text-[#1C2321] font-bold">
               Smart Resort 360
             </span>
           </div>
 
           {/* Navigation Links */}
           <nav className="flex items-center gap-8">
-            <div className="hidden md:flex items-center gap-7 text-xs font-semibold text-[#5c4f3d] tracking-widest uppercase">
+            <div className="hidden md:flex items-center gap-7 text-xs font-semibold text-[#4A5450] tracking-widest uppercase">
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="hover:text-[#9e7634] transition-colors cursor-pointer"
+                className="hover:text-[#3D5A45] transition-colors cursor-pointer"
               >
                 Overview
               </button>
               <button
                 onClick={scrollToFeatures}
-                className="hover:text-[#9e7634] transition-colors cursor-pointer"
+                className="hover:text-[#3D5A45] transition-colors cursor-pointer"
               >
                 Ecosystem
               </button>
               <button
                 onClick={scrollToFeatures}
-                className="hover:text-[#9e7634] transition-colors cursor-pointer"
+                className="hover:text-[#3D5A45] transition-colors cursor-pointer"
               >
                 Operations
               </button>
               <button
                 onClick={scrollToFeatures}
-                className="hover:text-[#9e7634] transition-colors cursor-pointer"
+                className="hover:text-[#3D5A45] transition-colors cursor-pointer"
               >
                 Intelligence
               </button>
@@ -220,7 +218,7 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
             <button
               onClick={onEnter}
               data-cursor="enter"
-              className="px-5 py-2 rounded-full border border-[#c4a675] bg-[#9e7634]/10 text-[#6d4f1f] hover:bg-[#9e7634] hover:text-white hover:shadow-[0_4px_16px_rgba(158,118,52,0.25)] transition-all duration-300 text-xs font-semibold tracking-wider uppercase cursor-pointer"
+              className="px-5 py-2.5 rounded-full border border-[#C6D8CC] bg-[#EBF2ED] text-[#25372B] hover:bg-[#3D5A45] hover:text-white hover:shadow-[0_4px_16px_rgba(61,90,69,0.2)] transition-all duration-300 text-xs font-bold tracking-wider uppercase cursor-pointer"
             >
               <span>Enter Resort</span>
             </button>
@@ -236,41 +234,41 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
             ref={heroImgRef}
             src="/images/resort-day-hero.jpg"
             alt="Smart Resort 360 Daytime Luxury Resort"
-            className="w-full h-full object-cover object-center filter brightness-[1.02] contrast-[1.02] will-change-transform"
+            className="w-full h-full object-cover object-center filter brightness-[1.02] contrast-[1.01] will-change-transform"
           />
 
           {/* Natural Morning Sunlight Gradients */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#faf8f4]/95 via-[#faf8f4]/75 to-transparent md:w-3/5" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#faf8f4] via-[#faf8f4]/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#FAF9F6]/95 via-[#FAF9F6]/75 to-transparent md:w-3/5" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#FAF9F6] via-[#FAF9F6]/30 to-transparent" />
 
           {/* Subtle Natural Daylight Shimmer on Resort Architecture */}
-          <div className="absolute top-[26%] left-[34%] w-[26%] h-[36%] rounded-3xl bg-amber-100/20 blur-3xl pointer-events-none" />
+          <div className="absolute top-[26%] left-[34%] w-[26%] h-[36%] rounded-3xl bg-amber-50/20 blur-3xl pointer-events-none" />
 
           {/* Shimmering Pool Light Reflection */}
-          <div className="absolute bottom-16 right-16 w-1/3 h-1/3 rounded-full bg-cyan-300/15 blur-3xl pool-shimmer-effect" />
+          <div className="absolute bottom-16 right-16 w-1/3 h-1/3 rounded-full bg-cyan-200/15 blur-3xl pool-shimmer-effect" />
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 sm:px-12 pt-12 sm:pt-20 pb-16 flex-1 flex flex-col justify-between">
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 sm:px-12 pt-16 sm:pt-24 pb-16 flex-1 flex flex-col justify-between">
           <div className="max-w-2xl space-y-6">
             {/* Small Label */}
             <div
               ref={badgeRef}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f4ece0]/90 border border-[#d8c5a4]/80 text-[#7a5820] text-xs font-semibold tracking-widest uppercase shadow-sm backdrop-blur-xs"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF2ED] border border-[#C6D8CC] text-[#25372B] text-xs font-bold tracking-widest uppercase shadow-xs backdrop-blur-xs"
             >
-              <Compass className="w-3.5 h-3.5 text-[#9e7634]" />
+              <Compass className="w-3.5 h-3.5 text-[#3D5A45]" />
               <span>SMART RESORT 360 • LUXURY HOSPITALITY</span>
             </div>
 
             {/* Main Headline */}
-            <div ref={headlineRef} className="space-y-2">
-              <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-light text-[#221a10] tracking-tight leading-[1.08]">
+            <div ref={headlineRef} className="space-y-3">
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-[#1C2321] tracking-tight leading-[1.06]">
                 SMART <br />
-                <span className="font-medium bg-gradient-to-r from-[#9e7634] via-[#b88c42] to-[#805e24] bg-clip-text text-transparent">
+                <span className="text-[#3D5A45]">
                   RESORT 360
                 </span>
               </h1>
-              <p className="text-[#8c672b] text-base sm:text-lg font-medium tracking-wide pt-1">
+              <p className="text-[#3D5A45] text-base sm:text-xl font-semibold tracking-wide">
                 Intelligent Hospitality, Beautifully Connected.
               </p>
             </div>
@@ -278,9 +276,9 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
             {/* Supporting Copy */}
             <p
               ref={subtextRef}
-              className="text-[#574a38] text-base sm:text-lg leading-relaxed font-light max-w-lg"
+              className="text-[#4A5450] text-base sm:text-lg leading-relaxed font-normal max-w-lg"
             >
-              Smart Resort 360 seamlessly connects guests, resort operations, and staff with real-time intelligence for an unforgettable luxury experience.
+              Smart Resort 360 seamlessly connects guests, resort operations, and staff with real-time intelligence for an unforgettable, serene luxury experience.
             </p>
 
             {/* Primary & Secondary CTA Buttons */}
@@ -288,11 +286,11 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
               ref={ctaRef}
               className="pt-3 flex flex-wrap items-center gap-4"
             >
-              {/* Primary CTA (Visually Dominant) */}
+              {/* Primary CTA */}
               <button
                 onClick={onEnter}
                 data-cursor="enter"
-                className="enter-cta-btn group relative inline-flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-[#9e7634] via-[#b48c4b] to-[#8c672b] text-white font-semibold text-sm tracking-wider uppercase shadow-[0_6px_22px_rgba(158,118,52,0.32)] hover:shadow-[0_10px_32px_rgba(158,118,52,0.48)] hover:-translate-y-0.5 hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 cursor-pointer"
+                className="enter-cta-btn group relative inline-flex items-center gap-3 px-8 py-4 rounded-full bg-[#3D5A45] hover:bg-[#314838] active:bg-[#25372B] text-white font-bold text-sm tracking-wider uppercase shadow-[0_6px_22px_rgba(61,90,69,0.32)] hover:shadow-[0_10px_32px_rgba(61,90,69,0.45)] hover:-translate-y-0.5 hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 cursor-pointer"
               >
                 <span>ENTER RESORT</span>
                 <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1.5 transition-transform duration-300" />
@@ -301,46 +299,46 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
               {/* Secondary CTA */}
               <button
                 onClick={scrollToFeatures}
-                className="inline-flex items-center gap-2 px-6 py-4 rounded-full border border-[#c9b392] bg-white/80 hover:bg-white text-[#574a38] font-medium text-sm tracking-wide shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+                className="inline-flex items-center gap-2 px-6 py-4 rounded-full border border-[#DCD5CB] bg-white/90 hover:bg-white text-[#1C2321] font-semibold text-sm tracking-wide shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
               >
                 <span>EXPLORE PLATFORM</span>
-                <ChevronDown className="w-4 h-4 text-[#8c672b]" />
+                <ChevronDown className="w-4 h-4 text-[#3D5A45]" />
               </button>
             </div>
           </div>
 
           {/* Key Metrics Row */}
           <div ref={metricsRef} className="pt-12 sm:pt-16 max-w-2xl">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-[#2c2419]/10 bg-white/50 backdrop-blur-sm p-4 rounded-2xl shadow-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-[#E5E0D8] bg-white/75 backdrop-blur-md p-5 rounded-2xl shadow-xs border">
               <div>
-                <div className="font-serif text-2xl sm:text-3xl font-semibold text-[#8c672b]">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#3D5A45]">
                   100+
                 </div>
-                <div className="text-[11px] uppercase tracking-widest text-[#6e5f4d] font-medium mt-0.5">
+                <div className="text-[11px] uppercase tracking-wider text-[#5B6661] font-semibold mt-0.5">
                   Suites & Villas
                 </div>
               </div>
               <div>
-                <div className="font-serif text-2xl sm:text-3xl font-semibold text-[#8c672b]">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#3D5A45]">
                   24/7
                 </div>
-                <div className="text-[11px] uppercase tracking-widest text-[#6e5f4d] font-medium mt-0.5">
+                <div className="text-[11px] uppercase tracking-wider text-[#5B6661] font-semibold mt-0.5">
                   Operations
                 </div>
               </div>
               <div>
-                <div className="font-serif text-2xl sm:text-3xl font-semibold text-[#8c672b]">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#3D5A45]">
                   98%
                 </div>
-                <div className="text-[11px] uppercase tracking-widest text-[#6e5f4d] font-medium mt-0.5">
+                <div className="text-[11px] uppercase tracking-wider text-[#5B6661] font-semibold mt-0.5">
                   Satisfaction
                 </div>
               </div>
               <div>
-                <div className="font-serif text-2xl sm:text-3xl font-semibold text-[#8c672b]">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#3D5A45]">
                   Real-time
                 </div>
-                <div className="text-[11px] uppercase tracking-widest text-[#6e5f4d] font-medium mt-0.5">
+                <div className="text-[11px] uppercase tracking-wider text-[#5B6661] font-semibold mt-0.5">
                   AI Coordination
                 </div>
               </div>
@@ -352,25 +350,25 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
       {/* ── Section 2: Intelligent Hospitality Ecosystem ─────────── */}
       <section
         ref={featuresRef}
-        className="relative z-10 max-w-7xl mx-auto px-6 sm:px-12 py-20 sm:py-28 border-t border-[#ebdcc6]/60"
+        className="relative z-10 max-w-7xl mx-auto px-6 sm:px-12 py-20 sm:py-28 border-t border-[#E5E0D8]"
       >
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3 resort-reveal-item">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f4ece0] text-[#7a5820] text-xs font-semibold tracking-widest uppercase">
-            <Sparkles className="w-3.5 h-3.5 text-[#9e7634]" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF2ED] text-[#25372B] text-xs font-bold tracking-widest uppercase">
+            <Sparkles className="w-3.5 h-3.5 text-[#3D5A45]" />
             <span>Product Architecture</span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl text-[#221a10] font-normal tracking-tight">
+          <h2 className="text-3xl sm:text-4xl text-[#1C2321] font-bold tracking-tight">
             The Intelligent Hospitality Ecosystem
           </h2>
-          <p className="text-[#574a38] text-base leading-relaxed font-light">
+          <p className="text-[#4A5450] text-base leading-relaxed">
             Engineered to unify guest delight, staff responsiveness, and operations into a single seamless daytime experience.
           </p>
         </div>
 
-        {/* Feature Grid with Luxury Imagery */}
+        {/* Feature Grid with Photography */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
-          {/* Card 1: Guest Experience (with Suite Photography) */}
-          <div className="resort-reveal-item resort-card-hover rounded-2xl overflow-hidden bg-[#fefdfb] border border-[#ebdcc6] shadow-[0_4px_20px_rgba(44,36,25,0.03)] flex flex-col group">
+          {/* Card 1: Guest Experience */}
+          <div className="resort-reveal-item resort-card-hover rounded-2xl overflow-hidden bg-white border border-[#E5E0D8] shadow-[0_4px_20px_rgba(28,35,33,0.04)] flex flex-col group">
             <div className="relative h-64 overflow-hidden">
               <img
                 src="/images/resort-room-day.jpg"
@@ -378,27 +376,27 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
                 className="w-full h-full object-cover group-hover:scale-[1.025] transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-              <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-xs text-[#7a5820] text-xs font-semibold tracking-wider uppercase shadow-xs">
-                <BedDouble className="w-3.5 h-3.5 text-[#9e7634]" />
+              <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-xs text-[#25372B] text-xs font-bold tracking-wider uppercase shadow-xs">
+                <BedDouble className="w-3.5 h-3.5 text-[#3D5A45]" />
                 <span>Guest Experience</span>
               </div>
             </div>
             <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-4">
               <div className="space-y-2">
-                <h3 className="font-serif text-2xl text-[#221a10] font-semibold">
+                <h3 className="text-2xl text-[#1C2321] font-bold">
                   Personalized Guest Stays
                 </h3>
-                <p className="text-[#574a38] text-sm leading-relaxed">
+                <p className="text-[#4A5450] text-sm leading-relaxed">
                   Fast self-service check-in, real-time room amenities dispatch, personalized climate preferences, and instant digital concierge services at guests’ fingertips.
                 </p>
               </div>
-              <ul className="space-y-2 pt-2 border-t border-[#ebdcc6]/60 text-xs text-[#6e5f4d]">
+              <ul className="space-y-2.5 pt-2 border-t border-[#E5E0D8] text-xs text-[#4A5450] font-medium">
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#9e7634]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#3D5A45]" />
                   <span>Instant mobile key & verification</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#9e7634]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#3D5A45]" />
                   <span>One-touch room dining and housekeeping</span>
                 </li>
               </ul>
@@ -406,42 +404,42 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
           </div>
 
           {/* Card 2: Operations & Resolution */}
-          <div className="resort-reveal-item resort-card-hover rounded-2xl overflow-hidden bg-[#fefdfb] border border-[#ebdcc6] shadow-[0_4px_20px_rgba(44,36,25,0.03)] flex flex-col group">
+          <div className="resort-reveal-item resort-card-hover rounded-2xl overflow-hidden bg-white border border-[#E5E0D8] shadow-[0_4px_20px_rgba(28,35,33,0.04)] flex flex-col group">
             <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f4ece0] text-[#7a5820] text-xs font-semibold tracking-wider uppercase">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#9e7634]" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF2ED] text-[#25372B] text-xs font-bold tracking-wider uppercase">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#3D5A45]" />
                   <span>Resort Operations</span>
                 </div>
-                <h3 className="font-serif text-2xl text-[#221a10] font-semibold">
+                <h3 className="text-2xl text-[#1C2321] font-bold">
                   Incident Resolution & Incident Tracking
                 </h3>
-                <p className="text-[#574a38] text-sm leading-relaxed">
+                <p className="text-[#4A5450] text-sm leading-relaxed">
                   Every maintenance request and guest inquiry is tracked live with automated priority scoring, severity escalation, and direct staff assignment.
                 </p>
               </div>
 
-              <div className="bg-[#faf8f4] p-4 rounded-xl border border-[#ebdcc6]/70 space-y-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-[#352b1e]">
+              <div className="bg-[#FAF9F6] p-4 rounded-xl border border-[#E5E0D8] space-y-3">
+                <div className="flex items-center justify-between text-xs font-semibold text-[#1C2321]">
                   <span>Active Resolution Speed</span>
-                  <span className="text-[#9e7634]">Avg. 4.8 mins</span>
+                  <span className="text-[#3D5A45] font-bold">Avg. 4.8 mins</span>
                 </div>
-                <div className="w-full bg-[#e8dcce] h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-[#9e7634] to-[#b88c42] h-full w-[88%]" />
+                <div className="w-full bg-[#E0DBD2] h-2 rounded-full overflow-hidden">
+                  <div className="bg-[#3D5A45] h-full w-[88%]" />
                 </div>
-                <div className="flex justify-between text-[11px] text-[#7a6b57]">
+                <div className="flex justify-between text-[11px] text-[#5B6661] font-medium">
                   <span>Automated Escalation Active</span>
                   <span>100% Traceability</span>
                 </div>
               </div>
 
-              <ul className="space-y-2 border-t border-[#ebdcc6]/60 pt-2 text-xs text-[#6e5f4d]">
+              <ul className="space-y-2.5 border-t border-[#E5E0D8] pt-2 text-xs text-[#4A5450] font-medium">
                 <li className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#9e7634]" />
+                  <Clock className="w-4 h-4 text-[#3D5A45]" />
                   <span>Zero-delay staff task alerts</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#9e7634]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#3D5A45]" />
                   <span>Live status dashboard for supervisors</span>
                 </li>
               </ul>
@@ -449,47 +447,47 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
           </div>
 
           {/* Card 3: Staff Coordination */}
-          <div className="resort-reveal-item resort-card-hover rounded-2xl overflow-hidden bg-[#fefdfb] border border-[#ebdcc6] shadow-[0_4px_20px_rgba(44,36,25,0.03)] flex flex-col group">
+          <div className="resort-reveal-item resort-card-hover rounded-2xl overflow-hidden bg-white border border-[#E5E0D8] shadow-[0_4px_20px_rgba(28,35,33,0.04)] flex flex-col group">
             <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f4ece0] text-[#7a5820] text-xs font-semibold tracking-wider uppercase">
-                  <Users className="w-3.5 h-3.5 text-[#9e7634]" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF2ED] text-[#25372B] text-xs font-bold tracking-wider uppercase">
+                  <Users className="w-3.5 h-3.5 text-[#3D5A45]" />
                   <span>Staff & Administration</span>
                 </div>
-                <h3 className="font-serif text-2xl text-[#221a10] font-semibold">
+                <h3 className="text-2xl text-[#1C2321] font-bold">
                   Role-Based Workflows & Dispatch
                 </h3>
-                <p className="text-[#574a38] text-sm leading-relaxed">
+                <p className="text-[#4A5450] text-sm leading-relaxed">
                   Tailored views for front desk, housekeeping, engineering, and general management. Secure role switching ensures staff only access what matters.
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3.5 rounded-xl bg-[#faf8f4] border border-[#ebdcc6]/80">
-                  <div className="font-semibold text-[#8c672b]">Guest / User Mode</div>
-                  <div className="text-[#6e5f4d] text-[11px] mt-1">Bookings, room controls & requests</div>
+                <div className="p-3.5 rounded-xl bg-[#FAF9F6] border border-[#E5E0D8]">
+                  <div className="font-bold text-[#25372B]">Guest / User Mode</div>
+                  <div className="text-[#5B6661] text-[11px] mt-1">Bookings, room controls & requests</div>
                 </div>
-                <div className="p-3.5 rounded-xl bg-[#faf8f4] border border-[#ebdcc6]/80">
-                  <div className="font-semibold text-[#8c672b]">Admin / Staff Mode</div>
-                  <div className="text-[#6e5f4d] text-[11px] mt-1">Task queues, metrics & incident log</div>
+                <div className="p-3.5 rounded-xl bg-[#FAF9F6] border border-[#E5E0D8]">
+                  <div className="font-bold text-[#25372B]">Admin / Staff Mode</div>
+                  <div className="text-[#5B6661] text-[11px] mt-1">Task queues, metrics & incident log</div>
                 </div>
               </div>
 
-              <ul className="space-y-2 border-t border-[#ebdcc6]/60 pt-2 text-xs text-[#6e5f4d]">
+              <ul className="space-y-2.5 border-t border-[#E5E0D8] pt-2 text-xs text-[#4A5450] font-medium">
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#9e7634]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#3D5A45]" />
                   <span>Role-guarded navigation & permissions</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#9e7634]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#3D5A45]" />
                   <span>Full audit log and staff task completion</span>
                 </li>
               </ul>
             </div>
           </div>
 
-          {/* Card 4: Dynamic Pricing Intelligence (with Cabana Terrace Photography) */}
-          <div className="resort-reveal-item resort-card-hover rounded-2xl overflow-hidden bg-[#fefdfb] border border-[#ebdcc6] shadow-[0_4px_20px_rgba(44,36,25,0.03)] flex flex-col group">
+          {/* Card 4: Dynamic Pricing Intelligence */}
+          <div className="resort-reveal-item resort-card-hover rounded-2xl overflow-hidden bg-white border border-[#E5E0D8] shadow-[0_4px_20px_rgba(28,35,33,0.04)] flex flex-col group">
             <div className="relative h-64 overflow-hidden">
               <img
                 src="/images/resort-cabana-day.jpg"
@@ -497,27 +495,27 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
                 className="w-full h-full object-cover group-hover:scale-[1.025] transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-              <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-xs text-[#7a5820] text-xs font-semibold tracking-wider uppercase shadow-xs">
-                <LineChart className="w-3.5 h-3.5 text-[#9e7634]" />
+              <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-xs text-[#25372B] text-xs font-bold tracking-wider uppercase shadow-xs">
+                <LineChart className="w-3.5 h-3.5 text-[#3D5A45]" />
                 <span>Revenue Intelligence</span>
               </div>
             </div>
             <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-4">
               <div className="space-y-2">
-                <h3 className="font-serif text-2xl text-[#221a10] font-semibold">
+                <h3 className="text-2xl text-[#1C2321] font-bold">
                   Dynamic Pricing & Occupancy Forecasting
                 </h3>
-                <p className="text-[#574a38] text-sm leading-relaxed">
+                <p className="text-[#4A5450] text-sm leading-relaxed">
                   Predictive demand curves optimize RevPAR in real time while intelligent amenity recommendations elevate per-guest spending.
                 </p>
               </div>
-              <ul className="space-y-2 pt-2 border-t border-[#ebdcc6]/60 text-xs text-[#6e5f4d]">
+              <ul className="space-y-2.5 pt-2 border-t border-[#E5E0D8] text-xs text-[#4A5450] font-medium">
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#9e7634]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#3D5A45]" />
                   <span>Automated seasonal rate suggestions</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#9e7634]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#3D5A45]" />
                   <span>Amenity & cabana yield optimization</span>
                 </li>
               </ul>
@@ -528,17 +526,17 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
 
       {/* ── Section 3: Final Invitation Banner ───────────────────── */}
       <section className="relative z-10 max-w-7xl mx-auto px-6 sm:px-12 pb-24">
-        <div className="resort-reveal-item rounded-3xl p-10 sm:p-14 bg-gradient-to-br from-[#f8f2e7] via-[#f5ebdc] to-[#eee2ce] border border-[#d8c5a4] shadow-[0_12px_40px_rgba(158,118,52,0.12)] text-center space-y-6">
-          <div className="w-12 h-12 mx-auto rounded-full bg-[#9e7634]/15 flex items-center justify-center text-[#8c672b]">
-            <Compass className="w-6 h-6 text-[#9e7634]" />
+        <div className="resort-reveal-item rounded-3xl p-10 sm:p-14 bg-gradient-to-br from-[#FAF9F6] via-[#F4F1EA] to-[#EAE6DF] border border-[#E5E0D8] shadow-[0_12px_40px_rgba(28,35,33,0.06)] text-center space-y-6">
+          <div className="w-12 h-12 mx-auto rounded-full bg-[#EBF2ED] border border-[#C6D8CC] flex items-center justify-center text-[#3D5A45]">
+            <Compass className="w-6 h-6 text-[#3D5A45]" />
           </div>
 
           <div className="max-w-xl mx-auto space-y-2">
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#221a10] font-normal">
+            <h2 className="text-3xl sm:text-4xl text-[#1C2321] font-bold tracking-tight">
               Experience Smart Resort 360
             </h2>
-            <p className="text-[#574a38] text-sm sm:text-base leading-relaxed">
-              Step into the platform to explore real-time complaints management, room operations, and analytics.
+            <p className="text-[#4A5450] text-sm sm:text-base leading-relaxed">
+              Step into the platform to explore real-time complaints management, room operations, and intelligence.
             </p>
           </div>
 
@@ -546,7 +544,7 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
             <button
               onClick={onEnter}
               data-cursor="enter"
-              className="enter-cta-btn group relative inline-flex items-center gap-3 px-10 py-4 rounded-full bg-gradient-to-r from-[#9e7634] via-[#b48c4b] to-[#8c672b] text-white font-semibold text-sm tracking-wider uppercase shadow-[0_6px_25px_rgba(158,118,52,0.32)] hover:shadow-[0_10px_35px_rgba(158,118,52,0.48)] hover:-translate-y-0.5 hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 cursor-pointer"
+              className="enter-cta-btn group relative inline-flex items-center gap-3 px-10 py-4 rounded-full bg-[#3D5A45] hover:bg-[#314838] active:bg-[#25372B] text-white font-bold text-sm tracking-wider uppercase shadow-[0_6px_25px_rgba(61,90,69,0.32)] hover:shadow-[0_10px_35px_rgba(61,90,69,0.45)] hover:-translate-y-0.5 hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 cursor-pointer"
             >
               <span>ENTER RESORT</span>
               <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1.5 transition-transform duration-300" />
@@ -556,12 +554,12 @@ export function ResortLanding({ onEnter }: ResortLandingProps) {
       </section>
 
       {/* ── Clean Luxury Footer ─────────────────────────────────── */}
-      <footer className="relative z-10 border-t border-[#ebdcc6] bg-[#f5efe6]/60 py-8 px-6 sm:px-12 text-center text-xs text-[#7a6b57]">
+      <footer className="relative z-10 border-t border-[#E5E0D8] bg-[#F7F6F2] py-8 px-6 sm:px-12 text-center text-xs text-[#5B6661]">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#9e7634]" />
-            <span className="font-serif text-sm font-semibold text-[#352b1e]">Smart Resort 360</span>
-            <span className="text-[#998670]">— Intelligent Daytime Luxury Hospitality</span>
+            <div className="w-2 h-2 rounded-full bg-[#3D5A45]" />
+            <span className="text-sm font-bold text-[#1C2321]">Smart Resort 360</span>
+            <span className="text-[#7A8580]">— Intelligent Daytime Luxury Hospitality</span>
           </div>
           <div>
             <span>© 2026 Smart Resort 360. All rights reserved.</span>

@@ -39,7 +39,7 @@ export function ResortEntryExperience({
 
   return (
     <div
-      className={`relative w-full min-h-screen bg-[#faf8f4] ${
+      className={`relative w-full min-h-screen bg-[#FAF9F6] ${
         view === 'landing' && !isTransitioning ? 'overflow-y-auto' : 'overflow-hidden select-none'
       }`}
     >
@@ -61,7 +61,7 @@ export function ResortEntryExperience({
               alt="Smart Resort 360"
               className="w-full h-full object-cover object-center filter brightness-[1.0] contrast-[0.98] blur-[2px]"
             />
-            <div className="absolute inset-0 bg-[#faf8f4]/65 backdrop-blur-[3px]" />
+            <div className="absolute inset-0 bg-[#FAF9F6]/75 backdrop-blur-[3px]" />
           </div>
 
           {/* Authentication Card (centered, descends downward when isCardExiting is true) */}
