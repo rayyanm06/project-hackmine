@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/sidebar'
 import { AuthService, type AuthUser } from '@/lib/auth'
 import { useRoleStore } from '@/stores/role-store'
+import { isRouteAllowedForRole } from '@/config/role-permissions'
 import { sidebarData } from './data/sidebar-data'
 import { NavGroup } from './nav-group'
 import { NavUser } from './nav-user'
@@ -39,13 +40,24 @@ export function AppSidebar() {
     role: currentRole || 'Staff',
   }
 
+  // Filter navigation items and omit empty groups based on active role
+  const visibleNavGroups = sidebarData.navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (!item.url) return false
+        return isRouteAllowedForRole(currentRole, item.url)
+      }),
+    }))
+    .filter((group) => group.items.length > 0)
+
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
       <SidebarHeader>
         <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent>
-        {sidebarData.navGroups.map((props) => (
+        {visibleNavGroups.map((props) => (
           <NavGroup key={props.title} {...props} />
         ))}
       </SidebarContent>

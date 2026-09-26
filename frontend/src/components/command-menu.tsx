@@ -12,11 +12,14 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
+import { useRoleStore } from '@/stores/role-store'
+import { isRouteAllowedForRole } from '@/config/role-permissions'
 import { sidebarData } from './layout/data/sidebar-data'
 import { ScrollArea } from './ui/scroll-area'
 
 export function CommandMenu() {
   const navigate = useNavigate()
+  const { currentRole } = useRoleStore()
   const { setTheme } = useTheme()
   const { open, setOpen } = useSearch()
 
@@ -28,13 +31,20 @@ export function CommandMenu() {
     [setOpen]
   )
 
+  const visibleNavGroups = sidebarData.navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.url || isRouteAllowedForRole(currentRole, item.url)),
+    }))
+    .filter((group) => group.items.length > 0)
+
   return (
     <CommandDialog modal open={open} onOpenChange={setOpen}>
       <CommandInput placeholder='Type a command or search...' />
       <CommandList>
         <ScrollArea type='hover' className='h-72 pe-1'>
           <CommandEmpty>No results found.</CommandEmpty>
-          {sidebarData.navGroups.map((group) => (
+          {visibleNavGroups.map((group) => (
             <CommandGroup key={group.title} heading={group.title}>
               {group.items.map((navItem, i) => {
                 if (navItem.url)

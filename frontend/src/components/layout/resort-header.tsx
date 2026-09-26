@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { AuthService, type AuthUser } from '@/lib/auth'
 import { useRoleStore } from '@/stores/role-store'
+import { isRouteAllowedForRole } from '@/config/role-permissions'
 import { api } from '@/lib/api'
 
 export function ResortHeader() {
@@ -176,20 +177,26 @@ export function ResortHeader() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="my-1 bg-slate-100 dark:bg-slate-800" />
-              <DropdownMenuGroup>
-                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <Link to="/settings">
-                    <Settings className="size-3.5 text-slate-500 mr-2" />
-                    <span>Settings & Preferences</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <Link to="/resort-360">
-                    <Sparkles className="size-3.5 text-[#2D8CFF] mr-2" />
-                    <span>Resort 360 View</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
+              {(isRouteAllowedForRole(currentRole, '/settings') || isRouteAllowedForRole(currentRole, '/resort-360')) && (
+                <DropdownMenuGroup>
+                  {isRouteAllowedForRole(currentRole, '/settings') && (
+                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <Link to="/settings">
+                        <Settings className="size-3.5 text-slate-500 mr-2" />
+                        <span>Settings & Preferences</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {isRouteAllowedForRole(currentRole, '/resort-360') && (
+                    <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <Link to="/resort-360">
+                        <Sparkles className="size-3.5 text-[#2D8CFF] mr-2" />
+                        <span>Resort 360 View</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuGroup>
+              )}
               <DropdownMenuSeparator className="my-1 bg-slate-100 dark:bg-slate-800" />
               <DropdownMenuItem
                 onClick={handleSignOut}

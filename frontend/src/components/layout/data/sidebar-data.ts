@@ -5,7 +5,6 @@ import {
   Users,
   ShieldCheck,
   Map,
-  Camera,
   LineChart,
   BrainCircuit,
   History,
@@ -36,7 +35,6 @@ export const sidebarData: SidebarData = {
         { title: 'Dashboard',           titleKey: 'nav.dashboard',  url: '/',                   icon: LayoutDashboard },
         { title: 'Resort 360',                                      url: '/resort-360',         icon: Gauge },
         { title: 'Booking & Occupancy',                             url: '/booking-occupancy',  icon: LayoutDashboard },
-        { title: 'Rooms 360',           titleKey: 'nav.rooms360',   url: '/rooms-360',          icon: Camera },
       ],
     },
     {

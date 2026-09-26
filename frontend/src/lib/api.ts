@@ -1,3 +1,5 @@
+import { AuthService } from './auth';
+
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 export class APIError extends Error {
@@ -7,13 +9,27 @@ export class APIError extends Error {
   }
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const token = await AuthService.getIdToken();
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+  } catch (e) {
+    console.warn('Could not retrieve auth token for request:', e);
+  }
+  return {};
+}
+
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
+    const authHeaders = await getAuthHeaders();
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...options?.headers,
       },
     });
@@ -338,9 +354,13 @@ export const api = {
       formData.append('photo', payload.photo);
     }
     
+    const authHeaders = await getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/api/complaints`, {
       method: 'POST',
       body: formData,
+      headers: {
+        ...authHeaders,
+      },
     });
     
     if (!response.ok) {
@@ -390,9 +410,13 @@ export const api = {
     
     // We cannot use fetchAPI directly because we shouldn't set Content-Type: application/json
     const url = `${API_BASE_URL}/api/tasks/${id}/completion-proof`;
+    const authHeaders = await getAuthHeaders();
     const response = await fetch(url, {
       method: 'POST',
       body: formData,
+      headers: {
+        ...authHeaders,
+      },
     });
     
     if (!response.ok) {
@@ -468,7 +492,12 @@ export const api = {
 
   downloadOperationsReport: async (): Promise<void> => {
     const url = `${API_BASE_URL}/api/reports/operations`;
-    const response = await fetch(url);
+    const authHeaders = await getAuthHeaders();
+    const response = await fetch(url, {
+      headers: {
+        ...authHeaders,
+      },
+    });
     if (!response.ok) {
       throw new Error('Failed to download report');
     }
@@ -507,9 +536,13 @@ export const api = {
     formData.append('language', 'en'); // default
     if (photo) formData.append('photo', photo);
     
+    const authHeaders = await getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/api/guest/${guestId}/requests`, {
       method: 'POST',
       body: formData,
+      headers: {
+        ...authHeaders,
+      },
     });
     if (!response.ok) {
         throw new Error("Failed to create request");

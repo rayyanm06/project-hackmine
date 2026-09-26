@@ -106,6 +106,22 @@ export const AuthService = {
     return Boolean(auth?.currentUser) || Boolean(this.getCurrentUser())
   },
 
+  // Get the authenticated Firebase ID token
+  async getIdToken(forceRefresh: boolean = false): Promise<string | null> {
+    if (auth?.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken(forceRefresh)
+        if (token) {
+          sessionStorage.setItem('sr360_id_token', token)
+          return token
+        }
+      } catch (e) {
+        console.warn('Failed to retrieve Firebase ID token:', e)
+      }
+    }
+    return sessionStorage.getItem('sr360_id_token')
+  },
+
   // 1. Real Email + Password Sign In
   async signInWithEmail(email: string, password: string): Promise<AuthUser> {
     const trimmedEmail = email.trim().toLowerCase()
@@ -134,7 +150,8 @@ export const AuthService = {
       photoURL: cred.user.photoURL || undefined,
     }
 
-    this.persistSession(authUser)
+    const idToken = await cred.user.getIdToken()
+    this.persistSession(authUser, idToken)
     return authUser
   },
 
@@ -185,7 +202,8 @@ export const AuthService = {
       role,
     }
 
-    this.persistSession(authUser)
+    const idToken = await cred.user.getIdToken()
+    this.persistSession(authUser, idToken)
     return authUser
   },
 
@@ -210,7 +228,8 @@ export const AuthService = {
         photoURL: cred.user.photoURL || undefined,
       }
 
-      this.persistSession(authUser)
+      const idToken = await cred.user.getIdToken()
+      this.persistSession(authUser, idToken)
       return authUser
     } catch (err: any) {
       throw err
@@ -246,13 +265,17 @@ export const AuthService = {
     localStorage.removeItem('sr360_auth_user')
     localStorage.removeItem('resort_entered')
     sessionStorage.removeItem('resort_entered')
+    sessionStorage.removeItem('sr360_id_token')
   },
 
   // Session persistence in local/session storage
-  persistSession(user: AuthUser) {
+  persistSession(user: AuthUser, idToken?: string) {
     localStorage.setItem('sr360_auth_user', JSON.stringify(user))
     localStorage.setItem('resort_entered', 'true')
     sessionStorage.setItem('resort_entered', 'true')
+    if (idToken) {
+      sessionStorage.setItem('sr360_id_token', idToken)
+    }
   },
 
   // 6. Auth State Listener
@@ -266,6 +289,10 @@ export const AuthService = {
 
     return onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
+        firebaseUser.getIdToken().then((token) => {
+          sessionStorage.setItem('sr360_id_token', token)
+        }).catch(() => {})
+
         const role = determineUserRole(firebaseUser.email || '')
         const authUser: AuthUser = {
           uid: firebaseUser.uid,
@@ -280,6 +307,7 @@ export const AuthService = {
         localStorage.removeItem('sr360_auth_user')
         localStorage.removeItem('resort_entered')
         sessionStorage.removeItem('resort_entered')
+        sessionStorage.removeItem('sr360_id_token')
         callback(null)
       }
     })

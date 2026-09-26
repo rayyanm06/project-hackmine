@@ -6,3 +6,4 @@ python-multipart>=0.0.9
 joblib
 pandas
 scikit-learn
+firebase-admin>=7.0.0

@@ -1,10 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 from backend.database import engine, Base
 from backend.routes import health, complaints, tasks
 from backend.routes import staff, stats, rooms, intelligence, pricing, recommendations, audit, reports, ml
+from backend.routes import guest_portal, bookings
+from backend.auth import (
+    require_management,
+    require_staff_or_management,
+    require_guest_or_management,
+)
 
 # Create all tables on startup (including new rooms table)
 Base.metadata.create_all(bind=engine)
@@ -29,25 +35,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Day 2 routes (unchanged) ─────────────────────────────────────────────────
+# ── Public routes ────────────────────────────────────────────────────────────
 app.include_router(health.router)
-app.include_router(complaints.router)
-app.include_router(tasks.router)
 
-# ── Day 3 routes (new) ───────────────────────────────────────────────────────
-app.include_router(staff.router)
-app.include_router(stats.router)
-app.include_router(rooms.router)
-app.include_router(intelligence.router)
-app.include_router(pricing.router)
-app.include_router(recommendations.router)
-app.include_router(audit.router)
-app.include_router(reports.router)
-app.include_router(ml.router)
+# ── Operations routes (Staff & Management: Tasks & Staff) ───────────────────
+app.include_router(tasks.router, dependencies=[Depends(require_staff_or_management)])
+app.include_router(staff.router, dependencies=[Depends(require_staff_or_management)])
 
-from backend.routes import guest_portal, bookings
-app.include_router(guest_portal.router)
-app.include_router(bookings.router)
+# ── Guest & Management routes (Complaints, Rooms, Stats, Recommendations) ───
+app.include_router(complaints.router, dependencies=[Depends(require_guest_or_management)])
+app.include_router(recommendations.router, dependencies=[Depends(require_guest_or_management)])
+app.include_router(rooms.router, dependencies=[Depends(require_guest_or_management)])
+app.include_router(stats.router, dependencies=[Depends(require_guest_or_management)])
+app.include_router(guest_portal.router, dependencies=[Depends(require_guest_or_management)])
+app.include_router(bookings.router, dependencies=[Depends(require_guest_or_management)])
+
+# ── Revenue & Intelligence & Control (Management: Manager & Team Head) ───────
+app.include_router(pricing.router, dependencies=[Depends(require_management)])
+app.include_router(intelligence.router, dependencies=[Depends(require_management)])
+app.include_router(audit.router, dependencies=[Depends(require_management)])
+app.include_router(reports.router, dependencies=[Depends(require_management)])
+app.include_router(ml.router, dependencies=[Depends(require_management)])
 
 # ── Static file serving for completion proof images ──────────────────────────
 os.makedirs("uploads/proofs", exist_ok=True)

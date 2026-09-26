@@ -178,12 +178,13 @@ def upload_completion_proof(task_id: int, file: UploadFile = File(...), db: Sess
 
 from pydantic import BaseModel as PydanticBase
 from backend.services.reassignment_service import get_reassignment_candidates, perform_reassignment
+from backend.auth import require_management
 
 class ReassignRequest(PydanticBase):
     new_staff_id: int
     reason: str = "Manager-initiated reassignment"
 
-@router.get("/{task_id}/reassignment-candidates")
+@router.get("/{task_id}/reassignment-candidates", dependencies=[Depends(require_management)])
 def get_candidates(task_id: int, db: Session = Depends(get_db)):
     """
     Return ranked eligible staff for reassignment, excluding the current assignee.
@@ -218,7 +219,7 @@ def get_candidates(task_id: int, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/{task_id}/reassign")
+@router.post("/{task_id}/reassign", dependencies=[Depends(require_management)])
 def reassign_task(task_id: int, body: ReassignRequest, db: Session = Depends(get_db)):
     """
     Manager-initiated reassignment. Validates eligibility, creates a new
