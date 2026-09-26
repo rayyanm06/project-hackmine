@@ -13,7 +13,6 @@ export function ResortTransition({
   onComplete,
 }: ResortTransitionProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const archPortalRef = useRef<HTMLDivElement>(null)
   const leftDoorRef = useRef<HTMLDivElement>(null)
   const rightDoorRef = useRef<HTMLDivElement>(null)
   const leftDoorShadowRef = useRef<HTMLDivElement>(null)
@@ -41,7 +40,7 @@ export function ResortTransition({
       return
     }
 
-    // ── Build Single Coherent GSAP Timeline ──────────────────────
+    // ── Build Single Coherent Master GSAP Timeline ───────────────
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         defaults: { ease: 'power2.out' },
@@ -55,9 +54,8 @@ export function ResortTransition({
         ;(window as any).__doorTimeline = tl
       }
 
-      // 1. Initial State: Grand entrance appears with closed doors
+      // 1. Initial State: Full-screen closed double doors
       gsap.set(containerRef.current, { opacity: 0, display: 'flex' })
-      gsap.set(archPortalRef.current, { scale: 0.98, opacity: 0 })
       gsap.set(leftDoorRef.current, {
         rotateY: 0,
         transformOrigin: 'left center',
@@ -71,39 +69,44 @@ export function ResortTransition({
       gsap.set(leftDoorShadowRef.current, { opacity: 0 })
       gsap.set(rightDoorShadowRef.current, { opacity: 0 })
       gsap.set(doorSeamRef.current, { opacity: 0.9 })
-      gsap.set(sunlightBloomRef.current, { opacity: 0, scale: 0.85 })
+      gsap.set(sunlightBloomRef.current, { opacity: 0, scale: 0.9 })
 
-      // 2. Entrance Appears (0.00s - 0.65s)
-      tl.to(containerRef.current, { opacity: 1, duration: 0.65 })
-      tl.to(archPortalRef.current, { scale: 1.0, opacity: 1, duration: 0.7, ease: 'power2.out' }, 0.05)
+      // Target dashboard underlay for subtle entry approach
+      const dashboardEl = document.getElementById('dashboard-reveal-container')
+      if (dashboardEl) {
+        gsap.set(dashboardEl, { scale: 1.03, opacity: 0.88, transformOrigin: 'center center' })
+      }
 
-      // 3. UNMISTAKABLE CLOSED-DOORS PAUSE (1.6s visible hold without any popup/card)
-      tl.to({}, { duration: 1.6 })
+      // 2. Door Scene Fades In (0.00s - 0.65s) while login card finishes descending
+      tl.to(containerRef.current, { opacity: 1, duration: 0.65, ease: 'power2.inOut' })
+
+      // 3. UNMISTAKABLE CLOSED-DOORS CINEMATIC PAUSE (1.0s visible hold)
+      tl.to({}, { duration: 1.0 })
 
       // 4. Center seam glow fades as doors start to part
-      tl.to(doorSeamRef.current, { opacity: 0, duration: 0.25 })
+      tl.to(doorSeamRef.current, { opacity: 0, duration: 0.3 })
 
-      // 5. DOUBLE DOORS PHYSICALLY OPEN OUTWARD ON HINGES (1.7s duration)
-      // Pure 3D rotation around vertical edge hinges — ZERO xPercent or translateX sliding!
+      // 5. DOUBLE DOORS PHYSICALLY OPEN OUTWARD ON HINGES (2.1s duration)
+      // Pure 3D rotation around vertical edge hinges — ZERO horizontal sliding!
       tl.addLabel('doorsOpen')
 
-      // Left door rotates around its left vertical hinge
+      // Left door rotates around its left vertical hinge (-105deg)
       tl.to(
         leftDoorRef.current,
         {
-          rotateY: -84,
-          duration: 1.7,
+          rotateY: -105,
+          duration: 2.1,
           ease: 'power3.inOut',
         },
         'doorsOpen'
       )
 
-      // Right door rotates around its right vertical hinge
+      // Right door rotates around its right vertical hinge (105deg)
       tl.to(
         rightDoorRef.current,
         {
-          rotateY: 84,
-          duration: 1.7,
+          rotateY: 105,
+          duration: 2.1,
           ease: 'power3.inOut',
         },
         'doorsOpen'
@@ -113,8 +116,8 @@ export function ResortTransition({
       tl.to(
         leftDoorShadowRef.current,
         {
-          opacity: 0.45,
-          duration: 1.7,
+          opacity: 0.55,
+          duration: 2.1,
           ease: 'power3.inOut',
         },
         'doorsOpen'
@@ -123,26 +126,45 @@ export function ResortTransition({
       tl.to(
         rightDoorShadowRef.current,
         {
-          opacity: 0.45,
-          duration: 1.7,
+          opacity: 0.55,
+          duration: 2.1,
           ease: 'power3.inOut',
         },
         'doorsOpen'
       )
 
-      // Soft white daylight and vivid blue #2D8CFF atmospheric bloom expands behind opening doors
+      // Soft cool daylight and subtle #2D8CFF atmospheric bloom expands behind opening doors
       tl.fromTo(
         sunlightBloomRef.current,
-        { opacity: 0, scale: 0.85 },
-        { opacity: 0.85, scale: 1.2, duration: 1.5, ease: 'power2.out' },
-        'doorsOpen+=0.25'
+        { opacity: 0, scale: 0.9 },
+        { opacity: 0.6, scale: 1.15, duration: 1.6, ease: 'power2.out' },
+        'doorsOpen+=0.2'
+      )
+      tl.to(
+        sunlightBloomRef.current,
+        { opacity: 0, duration: 0.8, ease: 'power2.in' },
+        'doorsOpen+=1.3'
       )
 
-      // 6. Natural Daylight & Interior Reveal -> Fade Out Entrance to Dashboard
+      // Dashboard progressive reveal & gentle approach (scale: 1.03 -> 1.0, opacity: 0.88 -> 1.0)
+      if (dashboardEl) {
+        tl.to(
+          dashboardEl,
+          {
+            scale: 1.0,
+            opacity: 1.0,
+            duration: 2.1,
+            ease: 'power2.out',
+          },
+          'doorsOpen+=0.1'
+        )
+      }
+
+      // 6. Smooth settle into dashboard
       tl.to(
         containerRef.current,
-        { opacity: 0, duration: 0.75, ease: 'power2.inOut' },
-        '+=0.3'
+        { opacity: 0, duration: 0.45, ease: 'power2.inOut' },
+        '+=0.15'
       )
     })
 
@@ -156,132 +178,140 @@ export function ResortTransition({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#F8FAFC] select-none"
-      style={{ perspective: '1600px' }}
+      className="fixed inset-0 z-40 w-screen h-screen overflow-hidden select-none pointer-events-none"
+      style={{ perspective: '1600px', transformStyle: 'preserve-3d' }}
     >
-      {/* ── Background Daytime Coastal Resort Visual ─────────────── */}
-      <div className="absolute inset-0 pointer-events-none">
-        <img
-          src="/images/resort-day-entrance.jpg"
-          alt="Smart Resort 360 Daytime Entrance"
-          className="w-full h-full object-cover object-center filter brightness-[1.02] contrast-[1.01]"
-        />
-        {/* Soft, cool morning daylight wash with subtle sky reflection */}
-        <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-sky-50/20 to-white/40" />
+      {/* ── Daylight Atmospheric Bloom Layer behind doors ───────── */}
+      <div
+        ref={sunlightBloomRef}
+        className="absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none z-10"
+      >
+        <div className="w-[120vw] h-[120vh] bg-radial from-white/90 via-[#2D8CFF]/15 to-transparent blur-3xl" />
       </div>
 
-      {/* ── Architectural Portal (Non-clipping 3D Viewport) ──────── */}
+      {/* ── Full-Screen Double Architectural Doors Layer ─────────── */}
       <div
-        ref={archPortalRef}
-        className="relative z-20 w-[94vw] max-w-[920px] h-[82vh] max-h-[740px] flex flex-col will-change-transform"
+        className="absolute inset-0 w-full h-full flex z-20"
         style={{ perspective: '1600px', transformStyle: 'preserve-3d' }}
       >
-        {/* Subtle Architectural Transom Header */}
-        <div className="relative h-24 rounded-t-3xl bg-gradient-to-b from-white/95 via-slate-50/90 to-sky-50/70 border-t border-x border-b border-slate-200/80 backdrop-blur-md shadow-xs flex flex-col items-center justify-center z-30">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#2D8CFF]/10 border border-[#2D8CFF]/25 shadow-xs">
-            <svg
-              className="w-5 h-5 text-[#2D8CFF]"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 2C11.5 5 9 8 5 9C9 10 11.5 13 12 16C12.5 13 15 10 19 9C15 8 12.5 5 12 2Z" />
-              <path
-                d="M12 16C10.5 18 9 20 6 21C9 21.5 11 22 12 22C13 22 15 21.5 18 21C15 20 13.5 18 12 16Z"
-                opacity="0.8"
-              />
-              <path
-                d="M12 7C12 9 10.5 11 8 11.5C10.5 12 12 14 12 16C12 14 13.5 12 16 11.5C13.5 11 12 9 12 7Z"
-                opacity="0.6"
-              />
-            </svg>
+        {/* ── LEFT DOOR (Width ~50.5vw, Hinged on Left Edge) ─────── */}
+        <div
+          ref={leftDoorRef}
+          className="relative w-[50.5vw] h-full flex items-center justify-end pr-8 sm:pr-12 md:pr-16 will-change-transform"
+          style={{
+            transformStyle: 'preserve-3d',
+            transformOrigin: 'left center',
+            background: 'linear-gradient(135deg, #1C2834 0%, #263746 40%, #30495A 80%, #223240 100%)',
+            boxShadow: 'inset 0 0 60px rgba(0, 0, 0, 0.45), inset -2px 0 6px rgba(255, 255, 255, 0.08)',
+            borderRight: '1px solid rgba(45, 140, 255, 0.15)',
+          }}
+        >
+          {/* Architectural Lintel & Base Accents */}
+          <div className="absolute top-0 inset-x-0 h-4 bg-gradient-to-b from-black/40 to-transparent" />
+          <div className="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-black/50 to-transparent" />
+
+          {/* Architectural Inset Molding Panels (Cool Slate-Blue Satin Layers) */}
+          <div className="absolute inset-6 sm:inset-10 md:inset-14 flex flex-col justify-between py-4 pointer-events-none">
+            {/* Top Recessed Panel */}
+            <div className="h-[44%] w-full rounded-md border border-slate-600/40 bg-gradient-to-b from-[#1E2B38]/80 to-[#2A3B4D]/60 shadow-[inset_0_3px_12px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden">
+              <div className="absolute inset-3 sm:inset-4 border border-slate-500/20 rounded-xs" />
+              {/* Subtle architectural vertical line accent */}
+              <div className="absolute right-6 inset-y-4 w-px bg-gradient-to-b from-transparent via-[#2D8CFF]/20 to-transparent" />
+            </div>
+
+            {/* Bottom Recessed Panel */}
+            <div className="h-[52%] w-full rounded-md border border-slate-600/40 bg-gradient-to-b from-[#1E2B38]/80 to-[#2A3B4D]/60 shadow-[inset_0_3px_12px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden">
+              <div className="absolute inset-3 sm:inset-4 border border-slate-500/20 rounded-xs" />
+              <div className="absolute right-6 inset-y-4 w-px bg-gradient-to-b from-transparent via-[#2D8CFF]/20 to-transparent" />
+            </div>
           </div>
-          <span className="text-[11px] tracking-[0.26em] text-[#2D8CFF] uppercase mt-1.5 font-bold">
-            Smart Resort 360
-          </span>
+
+          {/* Dynamic 3D depth shadow overlay during rotation */}
+          <div
+            ref={leftDoorShadowRef}
+            className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent pointer-events-none opacity-0"
+          />
+
+          {/* Cool Brushed Silver / Chrome Hardware (Vertical Architectural Handle) */}
+          <div className="relative z-30 flex items-center">
+            {/* Upper Chrome Standoff Mount */}
+            <div className="absolute -top-28 right-1 w-4 h-3 rounded-sm bg-gradient-to-r from-slate-400 via-white to-slate-400 shadow-md border border-slate-300" />
+            {/* Lower Chrome Standoff Mount */}
+            <div className="absolute -bottom-28 right-1 w-4 h-3 rounded-sm bg-gradient-to-r from-slate-400 via-white to-slate-400 shadow-md border border-slate-300" />
+            {/* Main Vertical Bar */}
+            <div
+              className="w-3 sm:w-3.5 h-64 sm:h-72 rounded-full shadow-[0_6px_20px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.9)] border border-white/60 relative"
+              style={{
+                background: 'linear-gradient(to right, #94A3B8 0%, #E2E8F0 35%, #FFFFFF 50%, #CBD5E1 70%, #64748B 100%)',
+              }}
+            >
+              {/* Soft specular reflection line */}
+              <div className="absolute inset-y-2 left-0.5 w-[1.5px] bg-white/90 blur-[0.5px]" />
+            </div>
+          </div>
         </div>
 
-        {/* ── Main Doorway Area (Unclipped 3D Viewport) ──────────── */}
+        {/* ── RIGHT DOOR (Width ~50.5vw, Hinged on Right Edge) ────── */}
         <div
-          className="relative flex-1 w-full rounded-b-2xl border-x border-b border-slate-200/80 bg-slate-50/60 shadow-[0_25px_60px_rgba(15,23,42,0.12)]"
-          style={{ perspective: '1600px', transformStyle: 'preserve-3d' }}
+          ref={rightDoorRef}
+          className="relative w-[50.5vw] h-full flex items-center justify-start pl-8 sm:pl-12 md:pl-16 will-change-transform"
+          style={{
+            transformStyle: 'preserve-3d',
+            transformOrigin: 'right center',
+            background: 'linear-gradient(135deg, #223240 0%, #30495A 20%, #263746 60%, #1C2834 100%)',
+            boxShadow: 'inset 0 0 60px rgba(0, 0, 0, 0.45), inset 2px 0 6px rgba(255, 255, 255, 0.08)',
+            borderLeft: '1px solid rgba(45, 140, 255, 0.15)',
+          }}
         >
-          {/* Interior Glimpse Behind Doors */}
-          <div className="absolute inset-0 rounded-b-2xl overflow-hidden pointer-events-none z-10">
-            <img
-              src="/images/resort-room-day.jpg"
-              alt="Resort Interior Glimpse"
-              className="w-full h-full object-cover object-center filter brightness-[1.04]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-white/75 via-sky-50/30 to-white/45" />
+          {/* Architectural Lintel & Base Accents */}
+          <div className="absolute top-0 inset-x-0 h-4 bg-gradient-to-b from-black/40 to-transparent" />
+          <div className="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-black/50 to-transparent" />
 
-            {/* Soft White Daylight + Vivid Blue Atmospheric Bloom */}
-            <div
-              ref={sunlightBloomRef}
-              className="absolute inset-0 bg-radial from-[#2D8CFF]/20 via-sky-50/40 to-transparent flex items-center justify-center opacity-0"
-            >
-              <div className="w-full h-full bg-gradient-to-r from-transparent via-white/80 to-transparent blur-2xl" />
+          {/* Architectural Inset Molding Panels (Cool Slate-Blue Satin Layers) */}
+          <div className="absolute inset-6 sm:inset-10 md:inset-14 flex flex-col justify-between py-4 pointer-events-none">
+            {/* Top Recessed Panel */}
+            <div className="h-[44%] w-full rounded-md border border-slate-600/40 bg-gradient-to-b from-[#1E2B38]/80 to-[#2A3B4D]/60 shadow-[inset_0_3px_12px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden">
+              <div className="absolute inset-3 sm:inset-4 border border-slate-500/20 rounded-xs" />
+              <div className="absolute left-6 inset-y-4 w-px bg-gradient-to-b from-transparent via-[#2D8CFF]/20 to-transparent" />
+            </div>
+
+            {/* Bottom Recessed Panel */}
+            <div className="h-[52%] w-full rounded-md border border-slate-600/40 bg-gradient-to-b from-[#1E2B38]/80 to-[#2A3B4D]/60 shadow-[inset_0_3px_12px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.06)] relative overflow-hidden">
+              <div className="absolute inset-3 sm:inset-4 border border-slate-500/20 rounded-xs" />
+              <div className="absolute left-6 inset-y-4 w-px bg-gradient-to-b from-transparent via-[#2D8CFF]/20 to-transparent" />
             </div>
           </div>
 
-          {/* ── Double Architectural Resort Doors (Unclipped 3D Layer) ── */}
+          {/* Dynamic 3D depth shadow overlay during rotation */}
           <div
-            className="absolute inset-0 flex z-25 pointer-events-none"
-            style={{ perspective: '1600px', transformStyle: 'preserve-3d' }}
-          >
-            {/* Left Door Panel (Hinged on the Left Vertical Edge) */}
-            <div
-              ref={leftDoorRef}
-              className="w-1/2 h-full rounded-bl-2xl bg-gradient-to-r from-[#FFFFFF] via-[#F8FAFC] to-[#F1F5F9] border-r border-slate-300/80 shadow-[inset_0_0_30px_rgba(15,23,42,0.05)] relative flex items-center justify-end pr-7 will-change-transform"
-              style={{
-                transformStyle: 'preserve-3d',
-                transformOrigin: 'left center',
-              }}
-            >
-              {/* Architectural Inset Panels with Soft Mist-Blue Tint */}
-              <div className="absolute inset-6 border-2 border-slate-200/80 rounded-lg bg-gradient-to-b from-[#F0F7FA]/75 to-[#E8F0F8]/75 shadow-inner" />
-              <div className="absolute inset-12 border border-sky-100/80 rounded-md" />
-
-              {/* Dynamic 3D depth shadow overlay during rotation */}
-              <div
-                ref={leftDoorShadowRef}
-                className="absolute inset-0 rounded-bl-2xl bg-slate-900/40 pointer-events-none opacity-0"
-              />
-
-              {/* Vertical Satin Silver Architectural Pull Handle */}
-              <div className="relative z-10 w-2.5 h-44 rounded-full bg-gradient-to-b from-white via-slate-200 to-slate-400 shadow-[0_4px_14px_rgba(15,23,42,0.22)] border border-white" />
-            </div>
-
-            {/* Right Door Panel (Hinged on the Right Vertical Edge) */}
-            <div
-              ref={rightDoorRef}
-              className="w-1/2 h-full rounded-br-2xl bg-gradient-to-l from-[#FFFFFF] via-[#F8FAFC] to-[#F1F5F9] border-l border-slate-300/80 shadow-[inset_0_0_30px_rgba(15,23,42,0.05)] relative flex items-center justify-start pl-7 will-change-transform"
-              style={{
-                transformStyle: 'preserve-3d',
-                transformOrigin: 'right center',
-              }}
-            >
-              {/* Architectural Inset Panels with Soft Mist-Blue Tint */}
-              <div className="absolute inset-6 border-2 border-slate-200/80 rounded-lg bg-gradient-to-b from-[#F0F7FA]/75 to-[#E8F0F8]/75 shadow-inner" />
-              <div className="absolute inset-12 border border-sky-100/80 rounded-md" />
-
-              {/* Dynamic 3D depth shadow overlay during rotation */}
-              <div
-                ref={rightDoorShadowRef}
-                className="absolute inset-0 rounded-br-2xl bg-slate-900/40 pointer-events-none opacity-0"
-              />
-
-              {/* Vertical Satin Silver Architectural Pull Handle */}
-              <div className="relative z-10 w-2.5 h-44 rounded-full bg-gradient-to-b from-white via-slate-200 to-slate-400 shadow-[0_4px_14px_rgba(15,23,42,0.22)] border border-white" />
-            </div>
-          </div>
-
-          {/* Vertical Center Seam Soft Daylight Blue Glow (visible only when closed) */}
-          <div
-            ref={doorSeamRef}
-            className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-sky-200/80 blur-[1px] z-30 pointer-events-none"
+            ref={rightDoorShadowRef}
+            className="absolute inset-0 bg-gradient-to-l from-black/60 via-black/40 to-transparent pointer-events-none opacity-0"
           />
+
+          {/* Cool Brushed Silver / Chrome Hardware (Vertical Architectural Handle) */}
+          <div className="relative z-30 flex items-center">
+            {/* Upper Chrome Standoff Mount */}
+            <div className="absolute -top-28 left-1 w-4 h-3 rounded-sm bg-gradient-to-r from-slate-400 via-white to-slate-400 shadow-md border border-slate-300" />
+            {/* Lower Chrome Standoff Mount */}
+            <div className="absolute -bottom-28 left-1 w-4 h-3 rounded-sm bg-gradient-to-r from-slate-400 via-white to-slate-400 shadow-md border border-slate-300" />
+            {/* Main Vertical Bar */}
+            <div
+              className="w-3 sm:w-3.5 h-64 sm:h-72 rounded-full shadow-[0_6px_20px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.9)] border border-white/60 relative"
+              style={{
+                background: 'linear-gradient(to right, #94A3B8 0%, #E2E8F0 35%, #FFFFFF 50%, #CBD5E1 70%, #64748B 100%)',
+              }}
+            >
+              <div className="absolute inset-y-2 left-0.5 w-[1.5px] bg-white/90 blur-[0.5px]" />
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* ── Vertical Center Seam Light Glow (visible when doors closed) ── */}
+      <div
+        ref={doorSeamRef}
+        className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-gradient-to-b from-[#2D8CFF]/50 via-white/80 to-[#2D8CFF]/50 blur-[0.8px] z-30 pointer-events-none"
+      />
     </div>
   )
 }

@@ -185,7 +185,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                 setErrorMessage(null)
                 setResetSuccessMessage(null)
               }}
-              className="w-full text-center text-sm font-semibold text-[#60A5FA] hover:text-[#93C5FD] hover:underline flex items-center justify-center gap-1.5 pt-2 cursor-pointer drop-shadow-xs"
+              className="w-full text-center text-sm font-semibold text-[#93C5FD] hover:text-white hover:underline flex items-center justify-center gap-1.5 pt-2 cursor-pointer drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Sign In</span>
@@ -343,7 +343,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                       setCurrentView('signin')
                       setErrorMessage(null)
                     }}
-                    className="text-sm font-semibold text-[#60A5FA] hover:text-[#93C5FD] hover:underline cursor-pointer drop-shadow-xs"
+                    className="text-sm font-semibold text-[#93C5FD] hover:text-white hover:underline cursor-pointer drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
                   >
                     Already have an account? Sign In
                   </button>
@@ -439,7 +439,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                         setCurrentView('forgot-password')
                         setErrorMessage(null)
                       }}
-                      className="text-[#60A5FA] hover:text-[#93C5FD] font-semibold transition-colors cursor-pointer underline underline-offset-2 drop-shadow-xs"
+                      className="text-[#93C5FD] hover:text-white font-semibold transition-colors cursor-pointer underline underline-offset-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
                     >
                       Forgot password?
                     </button>
@@ -467,7 +467,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                         setCurrentView('register')
                         setErrorMessage(null)
                       }}
-                      className="text-sm font-semibold text-[#60A5FA] hover:text-[#93C5FD] hover:underline cursor-pointer drop-shadow-xs"
+                      className="text-sm font-semibold text-[#93C5FD] hover:text-white hover:underline cursor-pointer drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
                     >
                       Don't have an account? Create one
                     </button>
@@ -525,7 +525,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                     setCurrentView('forgot-password')
                     setErrorMessage(null)
                   }}
-                  className="text-[#60A5FA] hover:text-[#93C5FD] font-semibold transition-colors cursor-pointer underline underline-offset-2 drop-shadow-xs"
+                  className="text-[#93C5FD] hover:text-white font-semibold transition-colors cursor-pointer underline underline-offset-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
                 >
                   Forgot password?
                 </button>

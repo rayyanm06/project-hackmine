@@ -26,8 +26,9 @@ export function ResortEntryExperience({
   // Post-Login Timeline:
   // 1. Login card moves from right to center (passes in front of left text, hiding it behind card)
   // 2. Card holds briefly in the center (0.35s)
-  // 3. Card slides straight down off the screen
-  // 4. Closed resort doors appear and hold for 1.6s before physical hinged opening
+  // 3. Card begins sliding down (1150ms)
+  // 4. Door scene begins establishing itself behind descending card at 1300ms (150ms into descent)
+  // 5. Card exits viewport by 1950ms, doors fully established and closed, then hold for 1.0s before opening
   const handleAuthSuccess = useCallback((_user: AuthUser) => {
     // Stage 1: Login card glides to center, covering the left text
     setExitPhase('card-to-center')
@@ -42,17 +43,19 @@ export function ResortEntryExperience({
       setExitPhase('sliding-down')
     }, 1150)
 
-    // Stage 4: Closed resort doors appear and hold
+    // Stage 4: Full-screen closed resort doors begin fading in behind the descending card (0.15s into descent)
     setTimeout(() => {
       setIsTransitionActive(true)
-    }, 1750)
+    }, 1300)
   }, [])
 
   const isTransitioning = exitPhase !== 'idle' || isTransitionActive
 
   return (
     <div
-      className={`relative w-full min-h-screen bg-[#FAF9F6] ${
+      className={`relative w-full min-h-screen ${
+        isTransitionActive ? 'bg-transparent' : 'bg-[#FAF9F6]'
+      } ${
         view === 'landing' && !isTransitioning ? 'overflow-y-auto' : 'overflow-hidden select-none'
       }`}
     >
@@ -68,7 +71,11 @@ export function ResortEntryExperience({
       {(view === 'login' || isTransitioning) && (
         <div className="relative w-full min-h-screen flex items-center justify-center overflow-x-hidden overflow-y-auto">
           {/* Background image during auth with luxury reception interior */}
-          <div className="fixed inset-0 pointer-events-none z-0">
+          <div
+            className={`fixed inset-0 pointer-events-none z-0 transition-opacity duration-700 ${
+              isTransitionActive ? 'opacity-0' : 'opacity-100'
+            }`}
+          >
             <img
               src="/login-reception-bg.png"
               alt="Smart Resort 360 Reception"
@@ -121,7 +128,7 @@ export function ResortEntryExperience({
 
             {/* ── RIGHT SIDE: The Main Moving Object (Moves to center, covers left text, slides down) ── */}
             <div
-              className={`relative w-full lg:w-auto flex justify-center lg:justify-end shrink-0 z-30 ${
+              className={`relative w-full lg:w-auto flex justify-center lg:justify-end shrink-0 z-50 ${
                 exitPhase === 'idle'
                   ? 'animate-login-right-slide'
                   : exitPhase === 'card-to-center' || exitPhase === 'center-hold'

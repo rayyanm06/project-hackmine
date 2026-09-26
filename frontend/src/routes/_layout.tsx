@@ -47,7 +47,7 @@ function LayoutComponent() {
     return (
       <div className="relative w-full min-h-screen">
         {/* Render background layout ready to be revealed through the doors */}
-        <div className="w-full min-h-screen">
+        <div id="dashboard-reveal-container" className="w-full min-h-screen will-change-transform">
           <AuthenticatedLayout>
             <Outlet />
           </AuthenticatedLayout>
