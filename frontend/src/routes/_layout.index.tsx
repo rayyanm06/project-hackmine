@@ -136,138 +136,6 @@ const CANCELLATION_RISK_DATA = [
 
 type AnalyticsTab = 'occupancy' | 'readiness' | 'requests' | 'flow' | 'rates' | 'cancellations'
 
-// ── Staff Desk & Resort Reference Items ─────────────────────────────────────
-const DEFAULT_REFERENCE = {
-  id: 'default',
-  image: '/assets/resort-reference/resort.jpg',
-  captionTitle: 'SMART RESORT 360',
-  captionText: 'ONE PROPERTY. ONE CONNECTED OPERATION.',
-  category: 'PROPERTY ARCHITECTURE',
-}
-
-const STAFF_DESK_ITEMS = [
-  {
-    id: 'rooms',
-    label: 'Rooms 360',
-    path: '/rooms-360',
-    icon: Camera,
-    note: 'Virtual room inspection',
-    color: 'text-[#5B9EA3]',
-    image: '/assets/resort-reference/rooms.jpg',
-    captionTitle: 'ROOMS 360',
-    captionText: 'Explore room readiness & virtual inspection.',
-    category: 'ACCOMMODATION',
-  },
-  {
-    id: 'requests',
-    label: 'Guest Requests',
-    path: '/complaints',
-    icon: ClipboardList,
-    note: '8 active guest issues',
-    color: 'text-[#C96B56]',
-    image: '/assets/resort-reference/concierge.jpg',
-    captionTitle: 'GUEST SERVICE',
-    captionText: 'Respond to guest needs quickly.',
-    category: 'GUEST CARE',
-  },
-  {
-    id: 'tasks',
-    label: 'Tasks to Do',
-    path: '/tasks',
-    icon: CheckSquare,
-    note: '4 active shift dispatches',
-    color: 'text-[#2D8CFF]',
-    image: '/assets/resort-reference/operations.jpg',
-    captionTitle: 'RESORT OPERATIONS',
-    captionText: 'Keep service moving.',
-    category: 'FACILITIES',
-  },
-  {
-    id: 'staff',
-    label: 'Staff on Duty',
-    path: '/staff',
-    icon: Users,
-    note: '4 active roster on shift',
-    color: 'text-[#78AAA0]',
-    image: '/assets/resort-reference/staff.jpg',
-    captionTitle: 'STAFF',
-    captionText: 'See who is on duty.',
-    category: 'HOSPITALITY TEAM',
-  },
-  {
-    id: 'verification',
-    label: 'Check Completed Work',
-    path: '/verification',
-    icon: ShieldCheck,
-    note: 'Photo QA proof sign-off',
-    color: 'text-emerald-700',
-    image: '/assets/resort-reference/inspection.jpg',
-    captionTitle: 'QUALITY CHECK',
-    captionText: 'Verify completed work.',
-    category: 'STANDARDS & QA',
-  },
-  {
-    id: 'rates',
-    label: 'Room Rates',
-    path: '/pricing',
-    icon: TrendingUp,
-    note: 'Competitor benchmarks',
-    color: 'text-amber-700',
-    image: '/images/resort-entrance.jpg',
-    captionTitle: 'ROOM RATES',
-    captionText: "Monitor the property's pricing position.",
-    category: 'REVENUE STRATEGY',
-  },
-  {
-    id: 'cancellations',
-    label: 'Bookings at Risk',
-    path: '/cancellation-risk',
-    icon: BrainCircuit,
-    note: 'Retention intelligence',
-    color: 'text-[#C96B56]',
-    image: '/images/resort-day-entrance.jpg',
-    captionTitle: 'BOOKINGS',
-    captionText: 'Identify reservations that need attention.',
-    category: 'GUEST RETENTION',
-  },
-  {
-    id: 'preferences',
-    label: 'Guest Preferences',
-    path: '/recommendations',
-    icon: Sparkles,
-    note: 'Semantic matching',
-    color: 'text-[#5B9EA3]',
-    image: '/images/resort-room-day.jpg',
-    captionTitle: 'GUEST EXPERIENCE',
-    captionText: 'Understand guest preferences.',
-    category: 'PERSONALIZATION',
-  },
-  {
-    id: 'reports',
-    label: 'Resort Reports',
-    path: '/insights',
-    icon: ChartNoAxesCombined,
-    note: 'SLA & efficiency metrics',
-    color: 'text-[#2D8CFF]',
-    image: '/assets/resort-reference/reports.jpg',
-    captionTitle: 'RESORT REPORTS',
-    captionText: 'Understand how the property is performing.',
-    category: 'PERFORMANCE',
-  },
-  {
-    id: 'audit',
-    label: 'Audit Trail',
-    path: '/audit',
-    icon: History,
-    note: 'Tamper-proof activity logs',
-    color: 'text-[#1C3035]',
-    image: '/images/resort-hero.jpg',
-    captionTitle: 'OPERATIONS RECORD',
-    captionText: 'Review completed activity.',
-    category: 'GOVERNANCE & LOG',
-  },
-]
-
 function DashboardPage() {
   const navigate = useNavigate()
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => AuthService.getCurrentUser())
@@ -276,10 +144,11 @@ function DashboardPage() {
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>('occupancy')
   const [activeWingFilter, setActiveWingFilter] = useState<string>('all')
 
-  // Staff Desk & Resort Reference Interactive State
-  const [activeReference, setActiveReference] = useState(DEFAULT_REFERENCE)
+  // Staff Desk & Resort Reference Interactive Directional State
   const [hoveredFeatureId, setHoveredFeatureId] = useState<string | null>(null)
-  const [isFading, setIsFading] = useState(false)
+  const [slideDirection, setSlideDirection] = useState<'next' | 'prev'>('next')
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const prevIndexRef = useRef<number>(-1)
   const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -289,41 +158,6 @@ function DashboardPage() {
       }
     }
   }, [])
-
-  const handleFeatureHover = (feature: typeof STAFF_DESK_ITEMS[0]) => {
-    if (leaveTimerRef.current) {
-      clearTimeout(leaveTimerRef.current)
-      leaveTimerRef.current = null
-    }
-    setHoveredFeatureId(feature.id)
-    if (activeReference.id !== feature.id) {
-      setIsFading(true)
-      setTimeout(() => {
-        setActiveReference({
-          id: feature.id,
-          image: feature.image,
-          captionTitle: feature.captionTitle,
-          captionText: feature.captionText,
-          category: feature.category,
-        })
-        setIsFading(false)
-      }, 150)
-    }
-  }
-
-  const handleDeskMouseLeave = () => {
-    if (leaveTimerRef.current) {
-      clearTimeout(leaveTimerRef.current)
-    }
-    leaveTimerRef.current = setTimeout(() => {
-      setHoveredFeatureId(null)
-      setIsFading(true)
-      setTimeout(() => {
-        setActiveReference(DEFAULT_REFERENCE)
-        setIsFading(false)
-      }, 150)
-    }, 1000) // 1000ms grace period before gently returning to default
-  }
 
   useEffect(() => {
     const unsub = AuthService.subscribeToAuthState((user) => {
@@ -356,6 +190,262 @@ function DashboardPage() {
   const needsServiceCount = rooms.filter(r => r.status === 'needs_service').length
   const totalRooms = totalRegisteredRooms
   const occupancyPercentage = Math.round((occupiedCount / totalRooms) * 100)
+
+  // Live operational data bindings for Staff Desk Reference
+  const highPriorityComplaintsCount = mockComplaints.filter(c => c.priority === 'high' || c.priority === 'critical').length
+  const activeTasksCount = mockTasks.filter(t => t.status !== 'Closed' && t.status !== 'Verified').length
+  const onDutyStaffCount = mockStaff.filter(s => s.availability !== 'on_leave').length
+  const verifiedTasksCount = 2
+  const cancellationRiskCount = 2
+
+  // Physical Resort Reference Items (Connected to Real Operations)
+  const defaultDeskReference = {
+    id: 'default',
+    label: 'Resort Grounds',
+    path: '/resort-360',
+    icon: Compass,
+    image: '/assets/resort-reference/resort.jpg',
+    imageLabel: 'PHYSICAL PROPERTY',
+    captionTitle: 'SMART RESORT 360',
+    captionText: 'ONE PROPERTY. ONE CONNECTED OPERATION.',
+    category: 'PROPERTY ARCHITECTURE',
+    metrics: [
+      { label: 'TOTAL ROOMS', value: `${totalRooms}` },
+      { label: 'RESORT WINGS', value: '4 ACTIVE' },
+      { label: 'PROPERTY STATUS', value: 'NORMAL' },
+    ],
+    actionLabel: 'Open 3D Spatial Twin →',
+  }
+
+  const deskFeatureItems = [
+    {
+      id: 'rooms',
+      label: 'Rooms 360',
+      path: '/rooms-360',
+      icon: Camera,
+      note: 'Virtual room inspection',
+      color: 'text-[#5B9EA3]',
+      image: '/assets/resort-reference/rooms.jpg',
+      imageLabel: 'ROOM INSPECTION',
+      captionTitle: 'ROOMS 360',
+      captionText: 'Explore room readiness, floor spatial state & 3D virtual view.',
+      category: 'ACCOMMODATION',
+      metrics: [
+        { label: 'TOTAL ROOMS', value: `${totalRooms}` },
+        { label: 'READY', value: `${readyCount}` },
+        { label: 'NEEDS SERVICE', value: `${needsServiceCount}` },
+      ],
+      actionLabel: 'Open Rooms 360 →',
+    },
+    {
+      id: 'requests',
+      label: 'Guest Requests',
+      path: '/complaints',
+      icon: ClipboardList,
+      note: `${activeComplaintsCount} active guest issues`,
+      color: 'text-[#C96B56]',
+      image: '/assets/resort-reference/concierge.jpg',
+      imageLabel: 'GUEST SERVICE',
+      captionTitle: 'GUEST SERVICE',
+      captionText: 'Respond to in-house guest requests, amenities & multilingual issues.',
+      category: 'GUEST CARE',
+      metrics: [
+        { label: 'ACTIVE REQUESTS', value: `${activeComplaintsCount}` },
+        { label: 'HIGH PRIORITY', value: `${highPriorityComplaintsCount}` },
+        { label: 'SLA ADHERENCE', value: '94%' },
+      ],
+      actionLabel: 'Open Guest Requests →',
+    },
+    {
+      id: 'tasks',
+      label: 'Tasks to Do',
+      path: '/tasks',
+      icon: CheckSquare,
+      note: `${activeTasksCount} active shift dispatches`,
+      color: 'text-[#2D8CFF]',
+      image: '/assets/resort-reference/operations.jpg',
+      imageLabel: 'RESORT OPERATIONS',
+      captionTitle: 'RESORT OPERATIONS',
+      captionText: 'Keep service dispatches, housekeeping & maintenance orders moving.',
+      category: 'FACILITIES',
+      metrics: [
+        { label: 'ACTIVE TASKS', value: `${activeTasksCount}` },
+        { label: 'AVG SLA TARGET', value: '34m' },
+        { label: 'STATUS', value: 'ON TRACK' },
+      ],
+      actionLabel: 'Open Tasks to Do →',
+    },
+    {
+      id: 'staff',
+      label: 'Staff on Duty',
+      path: '/staff',
+      icon: Users,
+      note: `${onDutyStaffCount} active roster on shift`,
+      color: 'text-[#78AAA0]',
+      image: '/assets/resort-reference/staff.jpg',
+      imageLabel: 'HOSPITALITY TEAM',
+      captionTitle: 'STAFF ON DUTY',
+      captionText: 'Review department attendance, skills, and active workload balance.',
+      category: 'HOSPITALITY TEAM',
+      metrics: [
+        { label: 'ON DUTY', value: `${onDutyStaffCount}` },
+        { label: 'FLOOR COVERAGE', value: '100%' },
+        { label: 'DEPARTMENTS', value: '4 ACTIVE' },
+      ],
+      actionLabel: 'View Staff Roster →',
+    },
+    {
+      id: 'verification',
+      label: 'Check Completed Work',
+      path: '/verification',
+      icon: ShieldCheck,
+      note: 'Photo QA proof sign-off',
+      color: 'text-emerald-700',
+      image: '/assets/resort-reference/inspection.jpg',
+      imageLabel: 'QUALITY CONTROL',
+      captionTitle: 'QUALITY CHECK',
+      captionText: 'Inspect photo completion evidence and sign-off on standards.',
+      category: 'STANDARDS & QA',
+      metrics: [
+        { label: 'PHOTO QA', value: 'REQUIRED' },
+        { label: 'VERIFIED TODAY', value: `${verifiedTasksCount}` },
+        { label: 'PASS RATE', value: '100%' },
+      ],
+      actionLabel: 'Check Completed Work →',
+    },
+    {
+      id: 'rates',
+      label: 'Room Rates',
+      path: '/pricing',
+      icon: TrendingUp,
+      note: 'Competitor benchmarks',
+      color: 'text-amber-700',
+      image: '/images/resort-entrance.jpg',
+      imageLabel: 'REVENUE STRATEGY',
+      captionTitle: 'ROOM RATES',
+      captionText: 'Monitor competitive positioning and RevPAR optimization benchmarks.',
+      category: 'REVENUE STRATEGY',
+      metrics: [
+        { label: 'CURRENT RATE', value: '₹4,200' },
+        { label: 'WEEKEND LIFT', value: '+₹400 / NT' },
+        { label: 'COMPETITOR AVG', value: '₹4,800' },
+      ],
+      actionLabel: 'Open Room Rates →',
+    },
+    {
+      id: 'cancellations',
+      label: 'Bookings at Risk',
+      path: '/cancellation-risk',
+      icon: BrainCircuit,
+      note: 'Retention intelligence',
+      color: 'text-[#C96B56]',
+      image: '/images/resort-day-entrance.jpg',
+      imageLabel: 'GUEST RETENTION',
+      captionTitle: 'BOOKINGS AT RISK',
+      captionText: 'Identify reservations with elevated cancellation probability.',
+      category: 'GUEST RETENTION',
+      metrics: [
+        { label: 'FLAGGED AT RISK', value: `${cancellationRiskCount}` },
+        { label: 'LOW RISK RATIO', value: '70%' },
+        { label: 'RETENTION STEPS', value: 'AVAILABLE' },
+      ],
+      actionLabel: 'Review At-Risk Bookings →',
+    },
+    {
+      id: 'preferences',
+      label: 'Guest Preferences',
+      path: '/recommendations',
+      icon: Sparkles,
+      note: 'Semantic matching',
+      color: 'text-[#5B9EA3]',
+      image: '/images/resort-room-day.jpg',
+      imageLabel: 'GUEST EXPERIENCE',
+      captionTitle: 'GUEST EXPERIENCE',
+      captionText: 'Semantic matching of guest preferences to rooms, floors & amenities.',
+      category: 'PERSONALIZATION',
+      metrics: [
+        { label: 'MATCH ENGINE', value: 'SEMANTIC' },
+        { label: 'PREFERENCE ACCURACY', value: '98%' },
+        { label: 'PROFILES', value: '17 ACTIVE' },
+      ],
+      actionLabel: 'Open Preferences →',
+    },
+    {
+      id: 'reports',
+      label: 'Resort Reports',
+      path: '/insights',
+      icon: ChartNoAxesCombined,
+      note: 'SLA & efficiency metrics',
+      color: 'text-[#2D8CFF]',
+      image: '/assets/resort-reference/reports.jpg',
+      imageLabel: 'PROPERTY OVERVIEW',
+      captionTitle: 'RESORT REPORTS',
+      captionText: 'Understand long-term operational trends and department throughput.',
+      category: 'PERFORMANCE',
+      metrics: [
+        { label: 'AVG OCCUPANCY', value: '81.7%' },
+        { label: 'FACILITY DOWNTIME', value: '0%' },
+        { label: 'EFFICIENCY SCORE', value: '96/100' },
+      ],
+      actionLabel: 'Open Resort Reports →',
+    },
+    {
+      id: 'audit',
+      label: 'Audit Trail',
+      path: '/audit',
+      icon: History,
+      note: 'Tamper-proof activity logs',
+      color: 'text-[#1C3035]',
+      image: '/images/resort-hero.jpg',
+      imageLabel: 'OPERATIONS RECORD',
+      captionTitle: 'OPERATIONS RECORD',
+      captionText: 'Review completed shift activity, staff actions, and governance logs.',
+      category: 'GOVERNANCE & LOG',
+      metrics: [
+        { label: 'LOG INTEGRITY', value: 'TAMPER-PROOF' },
+        { label: 'SHIFT LOG ENTRIES', value: '50 LOGS' },
+        { label: 'SYSTEM STATE', value: 'SYNCED' },
+      ],
+      actionLabel: 'View Audit Trail →',
+    },
+  ]
+
+  const activeDeskItem = deskFeatureItems.find(i => i.id === hoveredFeatureId) || defaultDeskReference
+
+  const handleFeatureHover = (item: typeof deskFeatureItems[0]) => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current)
+      leaveTimerRef.current = null
+    }
+    if (hoveredFeatureId === item.id) return
+
+    const currentIndex = deskFeatureItems.findIndex(i => i.id === item.id)
+    const direction = currentIndex >= prevIndexRef.current ? 'next' : 'prev'
+    prevIndexRef.current = currentIndex
+    setSlideDirection(direction)
+
+    setIsTransitioning(true)
+    setHoveredFeatureId(item.id)
+
+    setTimeout(() => {
+      setIsTransitioning(false)
+    }, 400)
+  }
+
+  const handleDeskMouseLeave = () => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current)
+    }
+    leaveTimerRef.current = setTimeout(() => {
+      prevIndexRef.current = -1
+      setSlideDirection('prev')
+      setIsTransitioning(true)
+      setHoveredFeatureId(null)
+      setTimeout(() => {
+        setIsTransitioning(false)
+      }, 400)
+    }, 1000)
+  }
 
   // Needs Attention Items derived from rooms and active tasks
   const attentionItems = [
@@ -1167,7 +1257,7 @@ function DashboardPage() {
               onMouseLeave={handleDeskMouseLeave}
               className="grid grid-cols-1 sm:grid-cols-2 gap-3"
             >
-              {STAFF_DESK_ITEMS.map((item) => {
+              {deskFeatureItems.map((item) => {
                 const Icon = item.icon
                 const isHovered = hoveredFeatureId === item.id
                 return (
@@ -1217,7 +1307,7 @@ function DashboardPage() {
 
           </div>
 
-          {/* RIGHT PART: Dedicated Resort Reference Visual Panel (5 cols on lg) */}
+          {/* RIGHT PART: Dedicated Resort Reference & Context Panel (5 cols on lg) */}
           <div className="lg:col-span-5 flex flex-col rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] dark:shadow-[4px_4px_0px_#0f172a] justify-between space-y-4">
             
             {/* Panel Top Line */}
@@ -1229,74 +1319,102 @@ function DashboardPage() {
                 </span>
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded bg-[#1C3035]/10 dark:bg-slate-800 text-[#1C3035] dark:text-slate-300 border border-[#1C3035]/20">
-                {activeReference.category}
+                {activeDeskItem.category}
               </span>
             </div>
 
-            {/* Dedicated Visual Image Frame (NOT a background) */}
-            <div className="relative rounded-lg border-2 border-[#1C3035] overflow-hidden bg-[#1C3035] aspect-[16/10] sm:aspect-[16/11] shadow-[3px_3px_0px_#1C3035]">
+            {/* Dedicated Visual Image Frame (Restrained Editorial Proportion) */}
+            <div className="relative rounded-lg border-2 border-[#1C3035] overflow-hidden bg-[#1C3035] aspect-[16/9] shadow-[3px_3px_0px_#1C3035]">
               <img
-                src={activeReference.image}
-                alt={activeReference.captionTitle}
-                className={`w-full h-full object-cover transition-opacity duration-350 ease-in-out ${
-                  isFading ? 'opacity-30' : 'opacity-100'
+                key={activeDeskItem.id}
+                src={activeDeskItem.image}
+                alt={activeDeskItem.captionTitle}
+                className={`w-full h-full object-cover transition-all duration-400 ease-out transform ${
+                  isTransitioning
+                    ? slideDirection === 'next'
+                      ? 'opacity-40 translate-x-3 scale-[1.01]'
+                      : 'opacity-40 -translate-x-3 scale-[1.01]'
+                    : 'opacity-100 translate-x-0 scale-100'
                 }`}
               />
+              
+              {/* Architectural Tag Pill over image */}
               <div className="absolute top-2.5 left-2.5">
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#1C3035]/85 text-[#FBF9F4] border border-white/20 text-[9px] font-extrabold uppercase tracking-widest backdrop-blur-xs">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#1C3035]/90 text-[#FBF9F4] border border-white/20 text-[9px] font-extrabold uppercase tracking-widest backdrop-blur-xs shadow-[1px_1px_0px_#000]">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#5B9EA3] animate-pulse" />
-                  <span>Physical Property View</span>
+                  <span>{activeDeskItem.imageLabel}</span>
+                </span>
+              </div>
+
+              {/* Subdued top-right coordinate badge */}
+              <div className="absolute top-2.5 right-2.5">
+                <span className="px-2 py-0.5 rounded bg-[#FBF9F4]/90 text-[#1C3035] text-[9px] font-mono font-bold tracking-wider">
+                  REF · {activeDeskItem.id === 'default' ? '00' : String(deskFeatureItems.findIndex(i => i.id === activeDeskItem.id) + 1).padStart(2, '0')}
                 </span>
               </div>
             </div>
 
-            {/* Caption Plaque */}
-            <div className="p-4 rounded-lg bg-[#F3EEE3]/80 dark:bg-slate-800/60 border border-[#1C3035]/15 space-y-2">
+            {/* Context Panel (Spacious, breathing room, real data) */}
+            <div className={`p-4 rounded-lg bg-[#F3EEE3]/80 dark:bg-slate-800/60 border border-[#1C3035]/15 space-y-3 transition-all duration-400 ease-out transform ${
+              isTransitioning
+                ? slideDirection === 'next'
+                  ? 'opacity-40 translate-x-2'
+                  : 'opacity-40 -translate-x-2'
+                : 'opacity-100 translate-x-0'
+            }`}>
+              
+              {/* Small Category Breadcrumb */}
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black tracking-widest uppercase text-slate-500">
-                  Operational Context
+                  OPERATIONAL CONTEXT · {activeDeskItem.category}
                 </span>
                 <span className="text-[10px] font-mono font-bold text-[#5B9EA3]">
-                  {activeReference.id === 'default' ? 'PROPERTY ARCHIVE' : 'ACTIVE REFERENCE'}
+                  {activeDeskItem.id === 'default' ? 'PROPERTY ARCHIVE' : 'ACTIVE CONTEXT'}
                 </span>
               </div>
 
-              <div className={`transition-all duration-300 ${isFading ? 'opacity-40 translate-y-0.5' : 'opacity-100 translate-y-0'}`}>
-                <h4 className="text-base sm:text-lg font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
-                  {activeReference.captionTitle}
+              {/* Large Feature Title & One-line Explanation */}
+              <div>
+                <h4 className="text-xl sm:text-2xl font-black text-[#1C3035] dark:text-white uppercase tracking-tight leading-tight">
+                  {activeDeskItem.captionTitle}
                 </h4>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-0.5">
-                  {activeReference.captionText}
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-1">
+                  {activeDeskItem.captionText}
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-[#1C3035]/10 dark:border-slate-700 flex justify-end">
-                {activeReference.id !== 'default' ? (
-                  (() => {
-                    const currentItem = STAFF_DESK_ITEMS.find(i => i.id === activeReference.id)
-                    if (!currentItem) return null
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => navigate({ to: currentItem.path })}
-                        className="inline-flex items-center gap-1 text-xs font-black text-[#2D8CFF] hover:underline cursor-pointer"
-                      >
-                        <span>Open {currentItem.label} Module →</span>
-                        <ArrowRight className="size-3.5" />
-                      </button>
-                    )
-                  })()
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => navigate({ to: '/resort-360' })}
-                    className="inline-flex items-center gap-1 text-xs font-black text-[#2D8CFF] hover:underline cursor-pointer"
+              {/* Real Project Data Stat Badges */}
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {activeDeskItem.metrics.map((m, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2 rounded bg-[#FBF9F4] dark:bg-slate-900 border border-[#1C3035]/20 text-center"
                   >
-                    <span>Open 3D Spatial Twin →</span>
-                    <ArrowRight className="size-3.5" />
-                  </button>
-                )}
+                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-500 block truncate">
+                      {m.label}
+                    </span>
+                    <span className="text-xs font-black text-[#1C3035] dark:text-white tracking-tight mt-0.5 block truncate">
+                      {m.value}
+                    </span>
+                  </div>
+                ))}
               </div>
+
+              {/* Direct Operational Action Button */}
+              <div className="pt-2 border-t border-[#1C3035]/10 dark:border-slate-700 flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-slate-500 hidden sm:inline">
+                  Click card or button to navigate
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: activeDeskItem.path })}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white text-xs font-black shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
+                >
+                  <span>{activeDeskItem.actionLabel}</span>
+                  <ArrowRight className="size-3.5" />
+                </button>
+              </div>
+
             </div>
 
             {/* Panel Footnote */}
