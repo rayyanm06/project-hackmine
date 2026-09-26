@@ -10,8 +10,6 @@ interface ResortTransitionProps {
 
 export function ResortTransition({
   active,
-  userRole = 'Guest',
-  userName = 'Resort User',
   onComplete,
 }: ResortTransitionProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -21,7 +19,6 @@ export function ResortTransition({
   const leftDoorShadowRef = useRef<HTMLDivElement>(null)
   const rightDoorShadowRef = useRef<HTMLDivElement>(null)
   const doorSeamRef = useRef<HTMLDivElement>(null)
-  const statusBadgeRef = useRef<HTMLDivElement>(null)
   const sunlightBloomRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<gsap.core.Timeline | null>(null)
 
@@ -74,22 +71,19 @@ export function ResortTransition({
       gsap.set(leftDoorShadowRef.current, { opacity: 0 })
       gsap.set(rightDoorShadowRef.current, { opacity: 0 })
       gsap.set(doorSeamRef.current, { opacity: 0.9 })
-      gsap.set(statusBadgeRef.current, { opacity: 1, y: 0 })
       gsap.set(sunlightBloomRef.current, { opacity: 0, scale: 0.85 })
 
-      // 2. Entrance Appears (0.00s - 0.70s)
+      // 2. Entrance Appears (0.00s - 0.65s)
       tl.to(containerRef.current, { opacity: 1, duration: 0.65 })
       tl.to(archPortalRef.current, { scale: 1.0, opacity: 1, duration: 0.7, ease: 'power2.out' }, 0.05)
 
-      // 3. UNMISTAKABLE CLOSED-DOORS PAUSE (0.70s - 2.30s, exactly 1.6s visible hold)
-      // The user clearly sees the closed ivory/blue double doors holding
+      // 3. UNMISTAKABLE CLOSED-DOORS PAUSE (1.6s visible hold without any popup/card)
       tl.to({}, { duration: 1.6 })
 
-      // 4. Status badge softly fades before doors part (2.30s - 2.60s)
-      tl.to(statusBadgeRef.current, { opacity: 0, y: -8, duration: 0.3, ease: 'power2.in' })
-      tl.to(doorSeamRef.current, { opacity: 0, duration: 0.2 }, '<')
+      // 4. Center seam glow fades as doors start to part
+      tl.to(doorSeamRef.current, { opacity: 0, duration: 0.25 })
 
-      // 5. DOUBLE DOORS PHYSICALLY OPEN OUTWARD ON HINGES (2.60s - 4.30s, 1.7s duration)
+      // 5. DOUBLE DOORS PHYSICALLY OPEN OUTWARD ON HINGES (1.7s duration)
       // Pure 3D rotation around vertical edge hinges — ZERO xPercent or translateX sliding!
       tl.addLabel('doorsOpen')
 
@@ -136,11 +130,11 @@ export function ResortTransition({
         'doorsOpen'
       )
 
-      // Soft white daylight and powder-blue atmospheric bloom expands behind opening doors
+      // Soft white daylight and vivid blue #2D8CFF atmospheric bloom expands behind opening doors
       tl.fromTo(
         sunlightBloomRef.current,
         { opacity: 0, scale: 0.85 },
-        { opacity: 0.8, scale: 1.15, duration: 1.5, ease: 'power2.out' },
+        { opacity: 0.85, scale: 1.2, duration: 1.5, ease: 'power2.out' },
         'doorsOpen+=0.25'
       )
 
@@ -182,11 +176,11 @@ export function ResortTransition({
         className="relative z-20 w-[94vw] max-w-[920px] h-[82vh] max-h-[740px] flex flex-col will-change-transform"
         style={{ perspective: '1600px', transformStyle: 'preserve-3d' }}
       >
-        {/* Subtle Architectural Transom Header (Light, clean, NOT a heavy gold box) */}
+        {/* Subtle Architectural Transom Header */}
         <div className="relative h-24 rounded-t-3xl bg-gradient-to-b from-white/95 via-slate-50/90 to-sky-50/70 border-t border-x border-b border-slate-200/80 backdrop-blur-md shadow-xs flex flex-col items-center justify-center z-30">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-sky-50 border border-sky-200/90 shadow-xs">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#2D8CFF]/10 border border-[#2D8CFF]/25 shadow-xs">
             <svg
-              className="w-5 h-5 text-[#1E40AF]"
+              className="w-5 h-5 text-[#2D8CFF]"
               viewBox="0 0 24 24"
               fill="currentColor"
             >
@@ -201,7 +195,7 @@ export function ResortTransition({
               />
             </svg>
           </div>
-          <span className="text-[11px] tracking-[0.26em] text-[#1E40AF] uppercase mt-1.5 font-bold">
+          <span className="text-[11px] tracking-[0.26em] text-[#2D8CFF] uppercase mt-1.5 font-bold">
             Smart Resort 360
           </span>
         </div>
@@ -220,31 +214,12 @@ export function ResortTransition({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-white/75 via-sky-50/30 to-white/45" />
 
-            {/* Soft White Daylight + Powder-Blue Atmospheric Bloom */}
+            {/* Soft White Daylight + Vivid Blue Atmospheric Bloom */}
             <div
               ref={sunlightBloomRef}
-              className="absolute inset-0 bg-radial from-sky-100/70 via-sky-50/40 to-transparent flex items-center justify-center opacity-0"
+              className="absolute inset-0 bg-radial from-[#2D8CFF]/20 via-sky-50/40 to-transparent flex items-center justify-center opacity-0"
             >
-              <div className="w-full h-full bg-gradient-to-r from-transparent via-white/70 to-transparent blur-2xl" />
-            </div>
-          </div>
-
-          {/* ── Status Badge on Closed Doors ─────────────────────── */}
-          <div
-            ref={statusBadgeRef}
-            className="absolute bottom-16 inset-x-0 z-35 flex flex-col items-center justify-center text-center px-4 pointer-events-none"
-          >
-            <div className="px-6 py-3.5 rounded-2xl bg-white/90 backdrop-blur-xl border border-slate-200/90 shadow-[0_12px_32px_rgba(15,23,42,0.12)] space-y-2 max-w-sm pointer-events-auto">
-              <div className="text-sm text-[#0F172A] font-bold tracking-tight">
-                Welcome, <span className="text-[#1E40AF]">{userName || userRole}</span>
-              </div>
-              <div className="text-[11px] uppercase tracking-wider text-[#64748B] font-semibold">
-                Preparing your resort experience...
-              </div>
-              {/* Soothing coastal blue progress indicator */}
-              <div className="w-48 h-1 bg-slate-100 rounded-full mx-auto overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-sky-400 via-blue-600 to-indigo-900 animate-subtle-progress" />
-              </div>
+              <div className="w-full h-full bg-gradient-to-r from-transparent via-white/80 to-transparent blur-2xl" />
             </div>
           </div>
 

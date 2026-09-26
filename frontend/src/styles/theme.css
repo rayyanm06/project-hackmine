@@ -9,25 +9,25 @@
   --popover:              oklch(0.998 0.002 240);
   --popover-foreground:   oklch(0.18 0.02 255);
 
-  /* ── Brand / Interactive (Soft Coastal / Powder Blue resort palette) ── */
-  --primary:              oklch(0.55 0.08 235);
-  --primary-foreground:   oklch(0.99 0.002 240);
-  --secondary:            oklch(0.95 0.015 235);
-  --secondary-foreground: oklch(0.24 0.05 240);
+  /* ── Brand / Interactive (Vivid Modern Blue #2D8CFF) ── */
+  --primary:              #2D8CFF;
+  --primary-foreground:   #FFFFFF;
+  --secondary:            #EAF3FF;
+  --secondary-foreground: #0B5CFF;
 
   /* ── Neutral / Subtle ────────────────────────────── */
-  --muted:                oklch(0.96 0.008 235);
-  --muted-foreground:     oklch(0.48 0.025 240);
-  --accent:               oklch(0.95 0.015 235);
-  --accent-foreground:    oklch(0.24 0.05 240);
+  --muted:                #F1F7FD;
+  --muted-foreground:     #5D7F92;
+  --accent:               #EAF3FF;
+  --accent-foreground:    #0B5CFF;
 
   /* ── Semantic ────────────────────────────────────── */
   --destructive:          oklch(0.52 0.19 25);
 
   /* ── Structure ───────────────────────────────────── */
-  --border:               oklch(0.91 0.010 235);
-  --input:                oklch(0.91 0.010 235);
-  --ring:                 oklch(0.60 0.08 235);
+  --border:               #D6E8FF;
+  --input:                #D6E8FF;
+  --ring:                 #2D8CFF;
 
   /* ── Sidebar ─────────────────────────────────────── */
   --sidebar:                      oklch(0.965 0.008 78);

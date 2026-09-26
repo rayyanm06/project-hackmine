@@ -137,21 +137,21 @@ export function CustomCursor({ active = true }: { active?: boolean }) {
 
   return (
     <>
-      {/* ── Subtle Micro Trail Dot (Coastal blue) ─── */}
+      {/* ── Subtle Micro Trail Dot (Vivid blue #2D8CFF) ─── */}
       <div
         ref={trailRef}
-        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99997] w-1.5 h-1.5 rounded-full bg-[#2563EB] opacity-0 transition-opacity duration-300"
+        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99997] w-1.5 h-1.5 rounded-full bg-[#2D8CFF] opacity-0 transition-opacity duration-300"
         style={{
-          boxShadow: '0 0 4px rgba(37, 99, 235, 0.35)',
+          boxShadow: '0 0 6px rgba(45, 140, 255, 0.45)',
         }}
       />
 
       {/* ── Outer Concentric Compass Dial Ring ─────────────────── */}
       <div
         ref={ringRef}
-        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99998] w-6 h-6 rounded-full border border-[#2563EB]/35 opacity-0 transition-[width,height,border-color,background-color] duration-200 ease-out"
+        className="pointer-events-none fixed top-0 left-0 -translate-x-1/2 -translate-y-1/2 z-[99998] w-6 h-6 rounded-full border border-[#2D8CFF]/40 opacity-0 transition-[width,height,border-color,background-color] duration-200 ease-out"
         style={{
-          boxShadow: '0 0 8px rgba(0, 0, 0, 0.05), inset 0 0 4px rgba(37, 99, 235, 0.08)',
+          boxShadow: '0 0 8px rgba(0, 0, 0, 0.05), inset 0 0 4px rgba(45, 140, 255, 0.12)',
         }}
       />
 
@@ -174,31 +174,31 @@ export function CustomCursor({ active = true }: { active?: boolean }) {
             cy="12"
             r="8.5"
             fill="none"
-            stroke="#2563EB"
+            stroke="#2D8CFF"
             strokeWidth="0.65"
             strokeDasharray="1.2 2.2"
-            opacity="0.45"
+            opacity="0.5"
           />
 
-          {/* North Point (Two-Tone Sky Blue / Coastal Navy Shading) */}
-          <path d="M12 2.5 L12 12 L10.8 10.2 Z" fill="#38BDF8" />
-          <path d="M12 2.5 L13.2 10.2 L12 12 Z" fill="#1E3A8A" />
+          {/* North Point */}
+          <path d="M12 2.5 L12 12 L10.8 10.2 Z" fill="#60A5FA" />
+          <path d="M12 2.5 L13.2 10.2 L12 12 Z" fill="#2D8CFF" />
 
           {/* South Point */}
-          <path d="M12 21.5 L12 12 L13.2 13.8 Z" fill="#38BDF8" />
-          <path d="M12 21.5 L10.8 13.8 L12 12 Z" fill="#1E3A8A" />
+          <path d="M12 21.5 L12 12 L13.2 13.8 Z" fill="#60A5FA" />
+          <path d="M12 21.5 L10.8 13.8 L12 12 Z" fill="#2D8CFF" />
 
           {/* East Point */}
-          <path d="M21.5 12 L12 12 L13.8 10.8 Z" fill="#38BDF8" />
-          <path d="M21.5 12 L13.8 13.2 L12 12 Z" fill="#1E3A8A" />
+          <path d="M21.5 12 L12 12 L13.8 10.8 Z" fill="#60A5FA" />
+          <path d="M21.5 12 L13.8 13.2 L12 12 Z" fill="#2D8CFF" />
 
           {/* West Point */}
-          <path d="M2.5 12 L12 12 L10.8 13.8 Z" fill="#38BDF8" />
-          <path d="M2.5 12 L10.2 10.8 L12 12 Z" fill="#1E3A8A" />
+          <path d="M2.5 12 L12 12 L10.8 13.8 Z" fill="#60A5FA" />
+          <path d="M2.5 12 L10.2 10.8 L12 12 Z" fill="#2D8CFF" />
 
           {/* Center Precision Pivot & Jewel */}
-          <circle cx="12" cy="12" r="2.2" fill="#F0F9FF" stroke="#1E3A8A" strokeWidth="0.75" />
-          <circle cx="12" cy="12" r="1.1" fill="#2563EB" />
+          <circle cx="12" cy="12" r="2.2" fill="#F0F9FF" stroke="#2D8CFF" strokeWidth="0.75" />
+          <circle cx="12" cy="12" r="1.1" fill="#2D8CFF" />
         </svg>
       </div>
     </>

@@ -16,31 +16,36 @@ export function ResortEntryExperience({
 }: ResortEntryExperienceProps) {
   const [view, setView] = useState<'landing' | 'login'>(initialView)
   const [isTransitionActive, setIsTransitionActive] = useState(false)
-  const [exitPhase, setExitPhase] = useState<'idle' | 'centering' | 'sliding-down'>('idle')
-  const [authenticatedUser, setAuthenticatedUser] = useState<AuthUser | null>(null)
+  const [exitPhase, setExitPhase] = useState<'idle' | 'card-to-center' | 'center-hold' | 'sliding-down'>('idle')
 
   // When user clicks "ENTER RESORT" on the Landing page
   const handleStartAuth = useCallback(() => {
     setView('login')
   }, [])
 
-  // When user completes authentication on the Auth Card:
-  // Choreography: Both sides move to center -> slide down together -> doors hold -> doors open -> interior -> dashboard
-  const handleAuthSuccess = useCallback((user: AuthUser) => {
-    setAuthenticatedUser(user)
+  // Post-Login Timeline:
+  // 1. Login card moves from right to center (passes in front of left text, hiding it behind card)
+  // 2. Card holds briefly in the center (0.35s)
+  // 3. Card slides straight down off the screen
+  // 4. Closed resort doors appear and hold for 1.6s before physical hinged opening
+  const handleAuthSuccess = useCallback((_user: AuthUser) => {
+    // Stage 1: Login card glides to center, covering the left text
+    setExitPhase('card-to-center')
 
-    // Stage 1: Both sides move to center
-    setExitPhase('centering')
+    // Stage 2: Center hold (settles briefly in the center)
+    setTimeout(() => {
+      setExitPhase('center-hold')
+    }, 800)
 
-    // Stage 2: Both sides slide down together
+    // Stage 3: Login card slides straight down off the screen
     setTimeout(() => {
       setExitPhase('sliding-down')
-    }, 650)
+    }, 1150)
 
-    // Stage 3: Full-screen closed double-doors transition appears and holds
+    // Stage 4: Closed resort doors appear and hold
     setTimeout(() => {
       setIsTransitionActive(true)
-    }, 1200)
+    }, 1750)
   }, [])
 
   const isTransitioning = exitPhase !== 'idle' || isTransitionActive
@@ -75,53 +80,53 @@ export function ResortEntryExperience({
           </div>
 
           {/* Main Layout: Left branding + Right glass card */}
-          <div className="relative z-10 w-full min-h-screen flex flex-col lg:flex-row items-center justify-between px-6 sm:px-10 lg:pl-[8vw] lg:pr-[10vw] py-10 lg:py-8 max-w-[1600px] mx-auto gap-10 lg:gap-12">
-            {/* ── LEFT SIDE: Slides in from left on load, moves to center on login, slides down ── */}
+          <div className="relative z-10 w-full min-h-screen flex flex-col lg:flex-row items-center justify-between px-6 sm:px-10 lg:pl-[8vw] lg:pr-[8vw] py-10 lg:py-8 max-w-[1600px] mx-auto gap-10 lg:gap-12">
+            {/* ── LEFT SIDE: Large statement text (stays in place, disappears BEHIND the moving card) ── */}
             <div
-              className={`w-full lg:max-w-[480px] xl:max-w-[540px] flex flex-col items-center lg:items-start text-center lg:text-left space-y-5 ${
-                exitPhase === 'idle'
-                  ? 'animate-login-left-slide'
-                  : exitPhase === 'centering'
-                  ? 'translate-x-0 lg:translate-x-[min(26vw,340px)] scale-[0.98] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]'
-                  : 'translate-x-0 lg:translate-x-[min(26vw,340px)] translate-y-[120vh] opacity-0 scale-90 transition-all duration-750 ease-[cubic-bezier(0.4,0,0.2,1)]'
+              className={`w-full lg:max-w-[560px] xl:max-w-[620px] flex flex-col items-center lg:items-start text-center lg:text-left space-y-6 z-10 ${
+                exitPhase === 'idle' ? 'animate-login-left-slide' : ''
               }`}
+              style={{
+                clipPath: exitPhase === 'idle' ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)',
+                transition: 'clip-path 750ms cubic-bezier(0.25, 1, 0.5, 1)',
+              }}
             >
               {/* Eyebrow */}
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/55 backdrop-blur-md border border-white/70 shadow-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#4A89AC]" />
-                <span className="text-[12px] sm:text-[13px] font-semibold tracking-[0.24em] text-[#3B7A9E] uppercase font-sans">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur-md border border-[#2D8CFF]/20 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-[#2D8CFF]" />
+                <span className="text-[12px] sm:text-[14px] font-bold tracking-[0.24em] text-[#2D8CFF] uppercase font-sans">
                   Smart Resort 360
                 </span>
               </div>
 
-              {/* Main Heading */}
-              <h1 className="text-3xl sm:text-4xl lg:text-[44px] xl:text-[48px] font-bold text-[#172B3A] tracking-tight leading-[1.15]">
+              {/* Main Heading (Much larger: 56–70px, bold, tight line-height) */}
+              <h1 className="text-5xl sm:text-6xl lg:text-[64px] xl:text-[70px] font-extrabold text-[#172B3A] tracking-tight leading-[0.98] lg:leading-[1.0]">
                 Your stay.<br />
-                <span className="text-[#3B7A9E]">Reimagined.</span>
+                <span className="text-[#2D8CFF]">Reimagined.</span>
               </h1>
 
-              {/* Supporting Text */}
-              <p className="text-[#3E5C70] text-[15px] sm:text-[16px] lg:text-[17px] font-medium leading-relaxed max-w-md">
+              {/* Supporting Text (18–20px) */}
+              <p className="text-[#475569] text-[18px] lg:text-[20px] font-medium leading-relaxed max-w-lg">
                 Seamless guest experiences, smarter resort operations.
               </p>
 
               {/* Decorative Luxury Divider & Pillars */}
-              <div className="pt-2 flex flex-col items-center lg:items-start space-y-3">
-                <div className="h-[1.5px] w-16 bg-[#A9D2E8]/80 rounded-full" />
-                <div className="text-[12px] sm:text-[13px] font-semibold tracking-[0.16em] text-[#5D7F92] uppercase">
+              <div className="pt-2 flex flex-col items-center lg:items-start space-y-3.5">
+                <div className="h-[2.5px] w-20 bg-[#2D8CFF]/50 rounded-full" />
+                <div className="text-[12px] sm:text-[13px] font-semibold tracking-[0.16em] text-[#64748B] uppercase">
                   Guest Experience • Operations • Intelligence
                 </div>
               </div>
             </div>
 
-            {/* ── RIGHT SIDE: Slides in from right on load, moves to center on login, slides down ── */}
+            {/* ── RIGHT SIDE: The Main Moving Object (Moves to center, covers left text, slides down) ── */}
             <div
-              className={`w-full lg:w-auto flex justify-center lg:justify-end shrink-0 ${
+              className={`w-full lg:w-auto flex justify-center lg:justify-end shrink-0 z-30 ${
                 exitPhase === 'idle'
                   ? 'animate-login-right-slide'
-                  : exitPhase === 'centering'
-                  ? 'translate-x-0 lg:-translate-x-[min(26vw,340px)] scale-[0.98] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]'
-                  : 'translate-x-0 lg:-translate-x-[min(26vw,340px)] translate-y-[120vh] opacity-0 scale-90 transition-all duration-750 ease-[cubic-bezier(0.4,0,0.2,1)]'
+                  : exitPhase === 'card-to-center' || exitPhase === 'center-hold'
+                  ? 'translate-x-0 lg:-translate-x-[calc(42vw-250px)] translate-y-0 transition-transform duration-800 ease-[cubic-bezier(0.25,1,0.5,1)]'
+                  : 'translate-x-0 lg:-translate-x-[calc(42vw-250px)] translate-y-[125vh] transition-transform duration-800 ease-[cubic-bezier(0.4,0,0.2,1)]'
               }`}
             >
               <ResortAuthCard
@@ -135,8 +140,6 @@ export function ResortEntryExperience({
       {/* ── View 3: Cinematic Daytime Transition (Resort Doors Reveal & Open) */}
       <ResortTransition
         active={isTransitionActive}
-        userRole={authenticatedUser?.role}
-        userName={authenticatedUser?.displayName}
         onComplete={() => {
           onEntered()
         }}
