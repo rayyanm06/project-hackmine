@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
   Compass,
   ArrowRight,
@@ -23,6 +21,7 @@ import {
   History,
   ClipboardList,
   Eye,
+  Building,
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -44,11 +43,6 @@ import { mockStaff } from '@/data/mock-staff'
 import { mockRooms } from '@/data/mock-rooms'
 import { api } from '@/lib/api'
 import { AuthService, type AuthUser } from '@/lib/auth'
-
-// Register GSAP ScrollTrigger plugin safely
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger)
-}
 
 export const Route = createFileRoute('/_layout/')({
   component: DashboardPage,
@@ -140,6 +134,96 @@ const CANCELLATION_RISK_DATA = [
   { tier: 'High Risk (>60%)', bookings: 2, percentage: 10, fill: '#C96B56' },
 ]
 
+// ── Resort Reference Visual Asset Dictionary (Staff Desk) ───────────────────
+export interface DeskReference {
+  image: string
+  tag: string
+  title: string
+  caption: string
+  path: string
+}
+
+const DEFAULT_DESK_REFERENCE: DeskReference = {
+  image: '/assets/resort-reference/resort.jpg',
+  tag: 'CONNECTED PROPERTY',
+  title: 'SMART RESORT 360',
+  caption: 'One property. One connected operation.',
+  path: '/resort-360',
+}
+
+const DESK_REFERENCES: Record<string, DeskReference> = {
+  'rooms-360': {
+    image: '/assets/resort-reference/rooms.jpg',
+    tag: 'GUEST SUITES',
+    title: 'ROOMS 360',
+    caption: 'Explore room readiness & virtual inspection.',
+    path: '/rooms-360',
+  },
+  'complaints': {
+    image: '/assets/resort-reference/concierge.jpg',
+    tag: 'CONCIERGE & DESK',
+    title: 'GUEST SERVICE',
+    caption: 'Respond to guest needs quickly.',
+    path: '/complaints',
+  },
+  'tasks': {
+    image: '/assets/resort-reference/operations.jpg',
+    tag: 'FLOOR DISPATCH',
+    title: 'RESORT OPERATIONS',
+    caption: 'Keep service moving.',
+    path: '/tasks',
+  },
+  'staff': {
+    image: '/assets/resort-reference/staff.jpg',
+    tag: 'HOSPITALITY TEAM',
+    title: 'STAFF',
+    caption: 'See who is on duty.',
+    path: '/staff',
+  },
+  'verification': {
+    image: '/assets/resort-reference/inspection.jpg',
+    tag: 'QUALITY CONTROL',
+    title: 'QUALITY CHECK',
+    caption: 'Verify completed work.',
+    path: '/verification',
+  },
+  'pricing': {
+    image: '/assets/resort-reference/resort.jpg',
+    tag: 'REVENUE STRATEGY',
+    title: 'ROOM RATES',
+    caption: "Monitor the property's pricing position.",
+    path: '/pricing',
+  },
+  'cancellation-risk': {
+    image: '/assets/resort-reference/concierge.jpg',
+    tag: 'RESERVATIONS DESK',
+    title: 'BOOKINGS',
+    caption: 'Identify reservations that need attention.',
+    path: '/cancellation-risk',
+  },
+  'recommendations': {
+    image: '/assets/resort-reference/operations.jpg',
+    tag: 'TAILORED HOSPITALITY',
+    title: 'GUEST EXPERIENCE',
+    caption: 'Understand guest preferences.',
+    path: '/recommendations',
+  },
+  'insights': {
+    image: '/assets/resort-reference/reports.jpg',
+    tag: 'PROPERTY BENCHMARKS',
+    title: 'RESORT REPORTS',
+    caption: 'Understand how the property is performing.',
+    path: '/insights',
+  },
+  'audit': {
+    image: '/assets/resort-reference/staff.jpg',
+    tag: 'GOVERNANCE LOG',
+    title: 'OPERATIONS RECORD',
+    caption: 'Review completed activity.',
+    path: '/audit',
+  },
+}
+
 type AnalyticsTab = 'occupancy' | 'readiness' | 'requests' | 'flow' | 'rates' | 'cancellations'
 
 function DashboardPage() {
@@ -150,9 +234,37 @@ function DashboardPage() {
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>('occupancy')
   const [activeWingFilter, setActiveWingFilter] = useState<string>('all')
 
-  const containerRef = useRef<HTMLDivElement>(null)
-  const pinnedSectionRef = useRef<HTMLDivElement>(null)
-  const pinnedContentRef = useRef<HTMLDivElement>(null)
+  // Staff Desk Reference Hover State & Debounce Timer
+  const [activeDeskRef, setActiveDeskRef] = useState<DeskReference>(DEFAULT_DESK_REFERENCE)
+  const [hoveredDeskId, setHoveredDeskId] = useState<string | null>(null)
+  const deskTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleDeskItemHover = (id: string) => {
+    if (deskTimerRef.current) {
+      clearTimeout(deskTimerRef.current)
+      deskTimerRef.current = null
+    }
+    setHoveredDeskId(id)
+    if (DESK_REFERENCES[id]) {
+      setActiveDeskRef(DESK_REFERENCES[id])
+    }
+  }
+
+  const handleDeskItemLeave = () => {
+    if (deskTimerRef.current) {
+      clearTimeout(deskTimerRef.current)
+    }
+    deskTimerRef.current = setTimeout(() => {
+      setHoveredDeskId(null)
+      setActiveDeskRef(DEFAULT_DESK_REFERENCE)
+    }, 950)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (deskTimerRef.current) clearTimeout(deskTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     const unsub = AuthService.subscribeToAuthState((user) => {
@@ -185,121 +297,6 @@ function DashboardPage() {
   const needsServiceCount = rooms.filter(r => r.status === 'needs_service').length
   const totalRooms = totalRegisteredRooms
   const occupancyPercentage = Math.round((occupiedCount / totalRooms) * 100)
-
-  // ── GSAP ScrollTrigger Pinned Dynamic Visual Transformation Engine ───────────
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReducedMotion || !pinnedSectionRef.current || !containerRef.current) return
-
-    const ctx = gsap.context(() => {
-      // 1. Continuous Material Color Interpolation along scroll
-      // Limestone (#F3EEE3) -> Soft Pearl (#F8F7F1) -> Pale Sea-Glass (#E7F0EC) -> Shell (#FBF9F4) -> Warm Paper (#F3EEE3)
-      ScrollTrigger.create({
-        trigger: containerRef.current,
-        start: 'top top',
-        end: 'bottom bottom',
-        scrub: 1.2,
-        onUpdate: (self) => {
-          const p = self.progress
-          let color = '#F3EEE3'
-          if (p < 0.22) {
-            // Reception -> Pearl
-            color = gsap.utils.interpolate('#F3EEE3', '#F8F7F1', p / 0.22)
-          } else if (p < 0.50) {
-            // Pearl -> Pale Sea-Glass
-            color = gsap.utils.interpolate('#F8F7F1', '#E7F0EC', (p - 0.22) / 0.28)
-          } else if (p < 0.78) {
-            // Pale Sea-Glass -> Shell with warm touch
-            color = gsap.utils.interpolate('#E7F0EC', '#FBF9F4', (p - 0.50) / 0.28)
-          } else {
-            // Shell -> Warm paper manager studio
-            color = gsap.utils.interpolate('#FBF9F4', '#F3EEE3', (p - 0.78) / 0.22)
-          }
-          if (containerRef.current) {
-            containerRef.current.style.backgroundColor = color
-          }
-        },
-      })
-
-      // 2. Desktop Pinned Transformation Sequence (Staff Desk -> Rooms -> Service -> Task Flow)
-      // Only pin on screens with width >= 768px to ensure comfortable mobile reading
-      if (window.innerWidth >= 768 && pinnedSectionRef.current && pinnedContentRef.current) {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: pinnedSectionRef.current,
-            start: 'top top',
-            end: '+=2600',
-            pin: pinnedContentRef.current,
-            scrub: 1,
-            anticipatePin: 1,
-          },
-        })
-
-        // Step 1: Staff Desk is visible at start (0-15%)
-        // Step 2: Staff Desk morphs out, Rooms Directory morphs in (15-40%)
-        tl.to('.morph-staff-desk', {
-          opacity: 0,
-          scale: 0.95,
-          y: -24,
-          duration: 0.8,
-          ease: 'power1.inOut',
-          pointerEvents: 'none',
-        }, 0.2)
-        .fromTo('.morph-rooms', {
-          opacity: 0,
-          scale: 1.04,
-          y: 30,
-          pointerEvents: 'none',
-        }, {
-          opacity: 1,
-          scale: 1,
-          y: 0,
-          duration: 0.8,
-          pointerEvents: 'auto',
-          ease: 'power1.inOut',
-        }, 0.3)
-
-        // Step 3: Room 204 zooms in, Service & Guest Request flow reveals (45-70%)
-        .to('.morph-rooms-grid', {
-          opacity: 0.15,
-          scale: 0.96,
-          duration: 0.7,
-          ease: 'power1.inOut',
-        }, 1.2)
-        .fromTo('.morph-service-flow', {
-          opacity: 0,
-          y: 36,
-          pointerEvents: 'none',
-        }, {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          pointerEvents: 'auto',
-          ease: 'power1.inOut',
-        }, 1.3)
-
-        // Step 4: Flow compresses into Live Shift Intelligence (70-100%)
-        .to('.morph-service-flow', {
-          opacity: 0.2,
-          scale: 0.97,
-          duration: 0.6,
-        }, 2.2)
-        .fromTo('.morph-intelligence-preview', {
-          opacity: 0,
-          y: 30,
-          pointerEvents: 'none',
-        }, {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          pointerEvents: 'auto',
-          ease: 'power1.out',
-        }, 2.3)
-      }
-    }, containerRef)
-
-    return () => ctx.revert()
-  }, [])
 
   // Needs Attention Items derived from rooms and active tasks
   const attentionItems = [
@@ -411,28 +408,25 @@ function DashboardPage() {
     : rooms.filter(r => r.wing === activeWingFilter)
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full min-h-screen px-4 sm:px-6 lg:px-8 py-8 space-y-16 max-w-[1600px] mx-auto select-none font-manrope bg-[#F3EEE3] dark:bg-slate-950 text-[#1C3035] dark:text-slate-100 transition-colors duration-500 relative"
-    >
+    <div className="w-full min-h-screen px-4 sm:px-6 lg:px-8 py-8 space-y-10 max-w-[1600px] mx-auto select-none font-manrope bg-[#F3EEE3] dark:bg-slate-950 text-[#1C3035] dark:text-slate-100 transition-colors">
       
       {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 1: RECEPTION & RESORT PULSE (Zone 1)
-          Bright linen architecture, connected resort telemetry
+          ZONE 1: OPERATIONAL HEADER & RESORT PULSE
+          Horizontal connected operational status system (The Resort is One System)
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="space-y-6 pt-2">
+      <section className="space-y-6">
         
-        {/* Editorial Greeting Statement */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6 border-b-2 border-[#1C3035]/20 dark:border-slate-800 pb-7">
-          <div className="space-y-2 max-w-3xl">
+        {/* Simple & Human Operational Greeting */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6 border-b-2 border-[#1C3035]/20 dark:border-slate-800 pb-6">
+          <div className="space-y-1.5 max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#1C3035] text-[#FBF9F4] text-[10px] font-extrabold uppercase tracking-widest shadow-[2px_2px_0px_#5B9EA3]">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#1C3035] text-[#FBF9F4] text-[10px] font-extrabold uppercase tracking-widest">
                 <Compass className="size-3 text-[#5B9EA3]" />
-                <span>Zone 01 · Front Desk Reception</span>
+                <span>Resort Operations Console</span>
               </span>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#78AAA0]/20 text-[#1C3035] dark:text-slate-200 border border-[#78AAA0]/40 text-xs font-bold">
                 <span className="w-2 h-2 rounded-full bg-[#78AAA0] animate-pulse" />
-                <span>Property Operating Normally</span>
+                <span>All 4 Resort Wings Active</span>
               </span>
             </div>
 
@@ -440,7 +434,7 @@ function DashboardPage() {
               <p className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-[#1C3035]/60 dark:text-slate-400">
                 {greeting},
               </p>
-              <h1 className="text-3xl sm:text-5xl lg:text-[56px] font-black text-[#1C3035] dark:text-white uppercase tracking-tight leading-none">
+              <h1 className="text-3xl sm:text-5xl lg:text-[54px] font-black text-[#1C3035] dark:text-white uppercase tracking-tight leading-none">
                 {displayName}.
               </h1>
               <p className="text-sm sm:text-base font-bold text-[#1C3035]/80 dark:text-slate-300 mt-2">
@@ -475,23 +469,23 @@ function DashboardPage() {
                 className="flex-1 sm:flex-initial rounded-lg px-4 py-2.5 h-auto text-xs font-black bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white border-2 border-[#1C3035] shadow-[3px_3px_0px_#1C3035] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all gap-1.5 cursor-pointer"
               >
                 <Eye className="size-3.5" />
-                <span>Open 3D Spatial Twin →</span>
+                <span>Open Resort 360 Spatial Twin →</span>
               </Button>
             </div>
           </div>
         </div>
 
         {/* ── THE RESORT PULSE: Horizontal Connected Operational System ── */}
-        <div className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] dark:shadow-[4px_4px_0px_#0f172a] space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1C3035]/15 dark:border-slate-800">
+        <div className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 shadow-[4px_4px_0px_#1C3035] dark:shadow-[4px_4px_0px_#0f172a]">
+          <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#1C3035]/15 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#5B9EA3]" />
               <span className="text-xs font-black uppercase tracking-widest text-[#1C3035] dark:text-white">
                 Resort Pulse · Connected Property Status
               </span>
             </div>
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
-              ONE RESORT · ONE PULSE
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Shift Pulse Synchronized
             </span>
           </div>
 
@@ -573,536 +567,22 @@ function DashboardPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 2: TODAY'S SHIFT & NEEDS ATTENTION QUEUE
-          Shift Timeline + Real Operational Queue
+          ZONE 2: MAIN VISUAL — LIVE RESORT / ROOM BOARD
+          Architectural Room Board + Progressive Disclosure Context Panel
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="space-y-8">
-        
-        {/* Shift Schedule Timeline */}
-        <div className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <Clock className="size-4 text-[#2D8CFF]" />
-              <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
-                Today's Shift · Operations Schedule
-              </h2>
-            </div>
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Flow of the Resort Day
-            </span>
-          </div>
-
-          {/* Horizontal Shift Timeline Strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 pt-1">
-            {SHIFT_MILESTONES.map((item, idx) => (
-              <div
-                key={idx}
-                className={`p-4 rounded-lg border-2 transition-all relative flex flex-col justify-between ${
-                  item.status === 'active'
-                    ? 'border-[#2D8CFF] bg-[#2D8CFF]/10 ring-2 ring-[#2D8CFF]/30 shadow-[2px_2px_0px_#2D8CFF]'
-                    : item.status === 'completed'
-                    ? 'border-[#1C3035]/20 bg-[#F3EEE3]/50 dark:bg-slate-800/40 opacity-80'
-                    : 'border-[#1C3035]/20 bg-[#FBF9F4] dark:bg-slate-800/60'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-mono font-black tracking-wider text-[#1C3035] dark:text-white">
-                      {item.time}
-                    </span>
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
-                      item.status === 'active'
-                        ? 'bg-[#2D8CFF] text-white'
-                        : item.status === 'completed'
-                        ? 'bg-emerald-700 text-white'
-                        : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}>
-                      {item.status === 'active' ? 'NOW' : item.status}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
-                    {item.title}
-                  </h3>
-                  <div className="text-xs font-extrabold text-[#5B9EA3] mt-0.5">
-                    {item.count}
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-2 pt-2 border-t border-[#1C3035]/10 dark:border-slate-700">
-                  {item.note}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Needs Attention Queue & Today's Activity Feed */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* LEFT: NEEDS ATTENTION QUEUE (7 cols on lg) */}
-          <div className="lg:col-span-7 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="size-4 text-[#C96B56]" />
-                <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
-                  Needs Attention · Operational Queue
-                </h2>
-              </div>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#C96B56]/15 text-[#C96B56] border border-[#C96B56]/30 uppercase tracking-wider">
-                {attentionItems.length} Urgent Items
-              </span>
-            </div>
-
-            {/* Operational Queue Rows */}
-            <div className="space-y-3">
-              {attentionItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3.5 rounded-lg border-2 border-[#1C3035]/20 dark:border-slate-800 bg-[#F3EEE3]/70 dark:bg-slate-800/50 hover:border-[#1C3035] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase ${item.badgeColor}`}>
-                        {item.location}
-                      </span>
-                      <span className="text-[10px] font-extrabold uppercase text-slate-500">
-                        {item.area} · {item.urgency}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400">
-                        {item.timestamp}
-                      </span>
-                    </div>
-
-                    <h3 className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
-                      {item.problem}
-                    </h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                      Responsible: <span className="font-bold text-[#1C3035] dark:text-slate-200">{item.assignedTo}</span>
-                    </p>
-                  </div>
-
-                  <Button
-                    onClick={() => navigate({ to: item.actionPath })}
-                    className="rounded-lg px-4 py-2 h-auto text-xs font-black bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white border-2 border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all gap-1.5 shrink-0 self-start sm:self-center cursor-pointer"
-                  >
-                    <span>{item.actionLabel}</span>
-                    <ArrowRight className="size-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* RIGHT: TODAY'S ACTIVITY (5 cols on lg) */}
-          <div className="lg:col-span-5 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#78AAA0]" />
-                <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
-                  Today's Activity
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate({ to: '/audit' })}
-                className="text-xs font-black text-[#2D8CFF] hover:underline cursor-pointer"
-              >
-                Full Log →
-              </button>
-            </div>
-
-            {/* Activity Feed */}
-            <div className="space-y-2.5 text-xs">
-              {[
-                { time: '18:42', person: 'Rahul Sharma', room: 'Room 204', desc: 'completed AC repair unit inspection' },
-                { time: '18:31', person: 'Sneha Reddy', room: 'Room 305', desc: 'requested 2 extra bath towels' },
-                { time: '18:18', person: 'Housekeeping', room: 'Room 105', desc: 'marked ready for guest check-in' },
-                { time: '18:04', person: 'Priya Nair', room: 'Room 210', desc: 'assigned to evening turn-down inspection' },
-                { time: '17:52', person: 'Duty Manager', room: 'Room 201', desc: 'verified villa turnover with photo QA' },
-              ].map((act, idx) => (
-                <div
-                  key={idx}
-                  className="p-2.5 rounded-lg bg-[#F3EEE3]/60 dark:bg-slate-800/40 border border-[#1C3035]/15 dark:border-slate-700 flex items-start gap-2.5"
-                >
-                  <span className="text-[11px] font-mono font-bold text-slate-500 w-12 shrink-0 pt-0.5">
-                    {act.time}
-                  </span>
-                  <p className="text-xs font-medium text-[#1C3035] dark:text-slate-200 leading-snug">
-                    <span className="font-extrabold text-[#1C3035] dark:text-white">{act.person}</span>{' '}
-                    ({act.room}) {act.desc}.
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-2 border-t border-[#1C3035]/10 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500">
-              <span>Real-time operations log</span>
-              <span className="text-[#5B9EA3]">✓ Live & Synchronized</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 3: PINNED SCROLL-DRIVEN OPERATIONAL TRANSFORMATION
-          The living section that continuously morphs as user scrolls:
-          Staff Desk -> Rooms -> Guest Service Flow -> Shift Intelligence
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={pinnedSectionRef} className="relative w-full">
-        
-        {/* DESKTOP PINNED VIEWPORT (Scrubbed GSAP Pinning Sequence) */}
-        <div ref={pinnedContentRef} className="hidden md:block w-full min-h-[580px] rounded-2xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-8 shadow-[5px_5px_0px_#1C3035] relative overflow-hidden">
-          
-          {/* STAGE 1: STAFF DESK ACTIONS (0% - 20% scroll) */}
-          <div className="morph-staff-desk w-full space-y-6">
-            <div className="flex items-center justify-between border-b-2 border-[#1C3035]/15 pb-4">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#5B9EA3]">
-                  OPERATIONAL CONTROL · STAGE 01
-                </span>
-                <h2 className="text-2xl font-black uppercase text-[#1C3035] dark:text-white tracking-tight mt-0.5">
-                  Staff Desk & Quick Actions
-                </h2>
-              </div>
-              <span className="text-xs font-bold text-slate-500 font-mono">
-                Scroll to transform into room floor ↓
-              </span>
-            </div>
-
-            {/* Quick Actions Bar */}
-            <div className="flex flex-wrap items-center gap-3 p-3.5 rounded-xl border border-[#1C3035]/20 bg-[#F3EEE3]/80">
-              <span className="text-xs font-black uppercase tracking-wider text-[#1C3035] px-2">
-                Shift Actions:
-              </span>
-              <Button
-                onClick={() => navigate({ to: '/complaints' })}
-                className="rounded-lg text-xs font-black bg-[#C96B56] hover:bg-[#b55b46] text-white border border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer gap-1.5"
-              >
-                <ClipboardList className="size-3.5" />
-                <span>+ Report Issue</span>
-              </Button>
-              <Button
-                onClick={() => navigate({ to: '/tasks' })}
-                className="rounded-lg text-xs font-black bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white border border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer gap-1.5"
-              >
-                <CheckSquare className="size-3.5" />
-                <span>+ Assign Task</span>
-              </Button>
-              <Button
-                onClick={() => navigate({ to: '/rooms-360' })}
-                className="rounded-lg text-xs font-black bg-[#5B9EA3] hover:bg-[#4A878C] text-white border border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer gap-1.5"
-              >
-                <Camera className="size-3.5" />
-                <span>+ Check Room</span>
-              </Button>
-              <Button
-                onClick={() => navigate({ to: '/staff' })}
-                variant="outline"
-                className="rounded-lg text-xs font-black border-2 border-[#1C3035] bg-[#FBF9F4] text-[#1C3035] hover:bg-[#D8C7AA]/40 shadow-[2px_2px_0px_#1C3035] cursor-pointer gap-1.5"
-              >
-                <Users className="size-3.5" />
-                <span>+ View Staff</span>
-              </Button>
-              <Button
-                onClick={() => navigate({ to: '/verification' })}
-                variant="outline"
-                className="rounded-lg text-xs font-black border-2 border-[#1C3035] bg-[#FBF9F4] text-[#1C3035] hover:bg-[#D8C7AA]/40 shadow-[2px_2px_0px_#1C3035] cursor-pointer gap-1.5"
-              >
-                <ShieldCheck className="size-3.5 text-emerald-700" />
-                <span>+ Check Completed Work</span>
-              </Button>
-            </div>
-
-            {/* Staff Desk Department Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 pt-1">
-              {[
-                { label: 'Rooms 360', path: '/rooms-360', icon: Camera, note: 'Virtual room directory', color: 'text-[#5B9EA3]' },
-                { label: 'Guest Requests', path: '/complaints', icon: ClipboardList, note: '8 active issues', color: 'text-[#C96B56]' },
-                { label: 'Tasks to Do', path: '/tasks', icon: CheckSquare, note: '4 dispatched', color: 'text-[#2D8CFF]' },
-                { label: 'Staff on Duty', path: '/staff', icon: Users, note: '4 active roster', color: 'text-[#78AAA0]' },
-                { label: 'Check Completed Work', path: '/verification', icon: ShieldCheck, note: 'Photo QA sign-off', color: 'text-emerald-700' },
-                { label: 'Room Rates', path: '/pricing', icon: TrendingUp, note: 'Competitor benchmarks', color: 'text-amber-700' },
-                { label: 'Bookings at Risk', path: '/cancellation-risk', icon: BrainCircuit, note: 'Retention steps', color: 'text-[#C96B56]' },
-                { label: 'Guest Preferences', path: '/recommendations', icon: Sparkles, note: 'Semantic matching', color: 'text-[#5B9EA3]' },
-                { label: 'Resort Reports', path: '/insights', icon: ChartNoAxesCombined, note: 'SLA & efficiency', color: 'text-[#2D8CFF]' },
-                { label: 'Audit Trail', path: '/audit', icon: History, note: 'Governance logs', color: 'text-[#1C3035]' },
-              ].map((action, idx) => {
-                const Icon = action.icon
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => navigate({ to: action.path })}
-                    className="p-3.5 rounded-lg border-2 border-[#1C3035]/25 bg-[#F3EEE3]/60 hover:bg-[#F3EEE3] hover:border-[#1C3035] hover:shadow-[3px_3px_0px_#1C3035] hover:-translate-y-0.5 transition-all text-left flex flex-col justify-between cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between">
-                      <Icon className={`size-4 ${action.color}`} />
-                      <ArrowUpRight className="size-3.5 text-slate-400" />
-                    </div>
-                    <div className="pt-2">
-                      <div className="text-xs sm:text-sm font-black text-[#1C3035] uppercase tracking-tight">
-                        {action.label}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-semibold truncate">
-                        {action.note}
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* STAGE 2: DYNAMIC ROOMS DIRECTORY (20% - 45% scroll) */}
-          <div className="morph-rooms absolute inset-0 p-8 space-y-6 opacity-0 pointer-events-none flex flex-col justify-between">
-            <div className="flex items-center justify-between border-b-2 border-[#1C3035]/15 pb-4">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#78AAA0]">
-                  PROPERTY DIRECTORY · STAGE 02
-                </span>
-                <h2 className="text-2xl font-black uppercase text-[#1C3035] dark:text-white tracking-tight mt-0.5">
-                  Rooms & Floor Architecture
-                </h2>
-              </div>
-              <span className="text-xs font-bold text-slate-500 font-mono">
-                Room 204 requires service · Scroll to see dispatch flow ↓
-              </span>
-            </div>
-
-            {/* Editorial Room Signage Composition */}
-            <div className="morph-rooms-grid grid grid-cols-5 gap-3.5 flex-1 items-center">
-              {[
-                { num: '101', status: 'OCCUPIED', wing: 'Ocean Wing', guest: 'Arjun Kapoor' },
-                { num: '102', status: 'OCCUPIED', wing: 'Ocean Wing', guest: 'Priya Patel' },
-                { num: '103', status: 'READY', wing: 'Ocean Wing', guest: 'Available' },
-                { num: '105', status: 'READY', wing: 'Ocean Wing', guest: 'Available' },
-                { num: '201', status: 'READY', wing: 'Coastline', guest: 'Available' },
-                { num: '202', status: 'OCCUPIED', wing: 'Coastline', guest: 'Meera Joshi' },
-                { num: '204', status: 'NEEDS SERVICE', wing: 'Coastline', guest: 'Arjun Kapoor · AC Issue', highlight: true },
-                { num: '206', status: 'OCCUPIED', wing: 'Beach', guest: 'Neha Sengupta' },
-                { num: '207', status: 'READY', wing: 'Beach', guest: 'Available' },
-                { num: '209', status: 'CLEANING', wing: 'Beach', guest: 'Turnover · Priya' },
-              ].map((rm, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3.5 rounded-lg border-2 text-left transition-all ${
-                    rm.highlight
-                      ? 'border-[#C96B56] bg-[#C96B56]/15 ring-2 ring-[#C96B56]/30 shadow-[3px_3px_0px_#C96B56]'
-                      : rm.status === 'READY'
-                      ? 'border-[#5B9EA3]/40 bg-[#5B9EA3]/10'
-                      : 'border-[#1C3035]/20 bg-[#F3EEE3]/80'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-black text-[#1C3035] tracking-tight">
-                      {rm.num}
-                    </span>
-                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded tracking-wider uppercase ${
-                      rm.highlight
-                        ? 'bg-[#C96B56] text-white'
-                        : rm.status === 'READY'
-                        ? 'bg-[#5B9EA3] text-white'
-                        : 'bg-[#1C3035] text-white'
-                    }`}>
-                      {rm.status}
-                    </span>
-                  </div>
-                  <div className="text-[10px] font-extrabold text-slate-500 uppercase mt-1">
-                    {rm.wing}
-                  </div>
-                  <div className={`text-[10px] font-bold truncate mt-1 ${rm.highlight ? 'text-[#C96B56]' : 'text-slate-600'}`}>
-                    {rm.guest}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between text-xs font-bold text-slate-500 pt-2 border-t border-[#1C3035]/10">
-              <span>Selected Focus: Room 204 Coastline Suite</span>
-              <span className="text-[#C96B56]">⚠️ AC cooling unit malfunction logged</span>
-            </div>
-          </div>
-
-          {/* STAGE 3: GUEST SERVICE & TASK DISPATCH FLOW (45% - 70% scroll) */}
-          <div className="morph-service-flow absolute inset-0 p-8 space-y-6 opacity-0 pointer-events-none flex flex-col justify-between">
-            <div className="flex items-center justify-between border-b-2 border-[#1C3035]/15 pb-4">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#C96B56]">
-                  CONNECTED SERVICE LIFECYCLE · STAGE 03
-                </span>
-                <h2 className="text-2xl font-black uppercase text-[#1C3035] dark:text-white tracking-tight mt-0.5">
-                  Guest Request to Resolution Flow
-                </h2>
-              </div>
-              <span className="text-xs font-bold text-slate-500 font-mono">
-                From guest touchpoint to QA verification ↓
-              </span>
-            </div>
-
-            {/* 4 Connected Operational Flow Nodes */}
-            <div className="grid grid-cols-4 gap-4 flex-1 items-center">
-              
-              {/* Step 1 */}
-              <div className="p-4 rounded-xl border-2 border-[#C96B56] bg-[#C96B56]/10 space-y-2 text-left relative">
-                <span className="text-[10px] font-black uppercase text-[#C96B56] tracking-wider">
-                  Step 1 · Guest Request
-                </span>
-                <h4 className="text-sm font-black text-[#1C3035] uppercase">
-                  Room 204 AC Issue
-                </h4>
-                <p className="text-xs text-slate-600 font-medium">
-                  "AC unit making weird noise and not cooling." — Arjun Kapoor
-                </p>
-                <div className="text-[10px] font-mono text-slate-500">25m ago · High Priority</div>
-              </div>
-
-              {/* Step 2 */}
-              <div className="p-4 rounded-xl border-2 border-[#5B9EA3] bg-[#5B9EA3]/10 space-y-2 text-left relative">
-                <span className="text-[10px] font-black uppercase text-[#5B9EA3] tracking-wider">
-                  Step 2 · NLP Triage
-                </span>
-                <h4 className="text-sm font-black text-[#1C3035] uppercase">
-                  Task Created #1021
-                </h4>
-                <p className="text-xs text-slate-600 font-medium">
-                  Automated department routing to Maintenance (AC Repair).
-                </p>
-                <div className="text-[10px] font-mono text-slate-500">Match Confidence: 98%</div>
-              </div>
-
-              {/* Step 3 */}
-              <div className="p-4 rounded-xl border-2 border-[#2D8CFF] bg-[#2D8CFF]/10 space-y-2 text-left relative">
-                <span className="text-[10px] font-black uppercase text-[#2D8CFF] tracking-wider">
-                  Step 3 · Staff Assigned
-                </span>
-                <h4 className="text-sm font-black text-[#1C3035] uppercase">
-                  Rahul Sharma Dispatched
-                </h4>
-                <p className="text-xs text-slate-600 font-medium">
-                  Best fit: HVAC certified. Work order dispatched to handheld.
-                </p>
-                <div className="text-[10px] font-mono text-slate-500">SLA Target: 34m remaining</div>
-              </div>
-
-              {/* Step 4 */}
-              <div className="p-4 rounded-xl border-2 border-emerald-700 bg-emerald-700/10 space-y-2 text-left relative">
-                <span className="text-[10px] font-black uppercase text-emerald-700 tracking-wider">
-                  Step 4 · QA Verification
-                </span>
-                <h4 className="text-sm font-black text-[#1C3035] uppercase">
-                  Photo Proof Sign-Off
-                </h4>
-                <p className="text-xs text-slate-600 font-medium">
-                  Compressor repaired. Duty Manager inspected photo proof.
-                </p>
-                <div className="text-[10px] font-mono text-emerald-700 font-bold">Room Cleared for Check-in</div>
-              </div>
-
-            </div>
-
-            <div className="flex items-center justify-between text-xs font-bold text-slate-500 pt-2 border-t border-[#1C3035]/10">
-              <span>Operational Nervous System: Active Throughput</span>
-              <span className="text-[#2D8CFF]">All 4 Steps Tracked with Tamper-Proof Audit</span>
-            </div>
-          </div>
-
-          {/* STAGE 4: SHIFT THROUGHPUT TO RESORT INTELLIGENCE (70% - 100% scroll) */}
-          <div className="morph-intelligence-preview absolute inset-0 p-8 space-y-6 opacity-0 pointer-events-none flex flex-col justify-between">
-            <div className="flex items-center justify-between border-b-2 border-[#1C3035]/15 pb-4">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#2D8CFF]">
-                  SHIFT SYNTHESIS · STAGE 04
-                </span>
-                <h2 className="text-2xl font-black uppercase text-[#1C3035] dark:text-white tracking-tight mt-0.5">
-                  Operations Flowing into Intelligence
-                </h2>
-              </div>
-              <span className="text-xs font-bold text-slate-500 font-mono">
-                Scroll down into Manager Analysis Studio ↓
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-6 flex-1 items-center">
-              <div className="p-5 rounded-xl border-2 border-[#1C3035]/20 bg-[#F3EEE3]/80 space-y-2 text-left">
-                <span className="text-[10px] font-black uppercase text-slate-500">Live Occupancy</span>
-                <div className="text-3xl font-black text-[#1C3035]">85.0%</div>
-                <p className="text-xs text-slate-600 font-semibold">17 of 20 Rooms Occupied Tonight</p>
-                <div className="text-xs font-bold text-[#5B9EA3]">+5% vs Yesterday</div>
-              </div>
-
-              <div className="p-5 rounded-xl border-2 border-[#1C3035]/20 bg-[#F3EEE3]/80 space-y-2 text-left">
-                <span className="text-[10px] font-black uppercase text-slate-500">Service Response SLA</span>
-                <div className="text-3xl font-black text-[#2D8CFF]">94.2%</div>
-                <p className="text-xs text-slate-600 font-semibold">Average Resolution Time: 28 mins</p>
-                <div className="text-xs font-bold text-emerald-700">All high priority on-track</div>
-              </div>
-
-              <div className="p-5 rounded-xl border-2 border-[#1C3035]/20 bg-[#F3EEE3]/80 space-y-2 text-left">
-                <span className="text-[10px] font-black uppercase text-slate-500">Revenue Opportunity</span>
-                <div className="text-3xl font-black text-emerald-700">+₹400</div>
-                <p className="text-xs text-slate-600 font-semibold">Deluxe Weekend Rate Adjustment</p>
-                <div className="text-xs font-bold text-slate-500">Demand Index: 92%</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs font-bold text-slate-500 pt-2 border-t border-[#1C3035]/10">
-              <span>Entering Zone 05: Resort Intelligence Desk</span>
-              <span className="text-[#2D8CFF]">Interactive Charts & Trend Analytics Below ↓</span>
-            </div>
-          </div>
-
-        </div>
-
-        {/* MOBILE FALLBACK (Clean unpinned operational list for small viewports) */}
-        <div className="md:hidden space-y-6">
-          <div className="rounded-xl border-2 border-[#1C3035] bg-[#FBF9F4] p-5 shadow-[4px_4px_0px_#1C3035] space-y-4">
-            <h3 className="text-lg font-black uppercase text-[#1C3035]">Staff Desk</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Button onClick={() => navigate({ to: '/complaints' })} className="text-xs font-bold bg-[#C96B56] text-white">
-                + Report Issue
-              </Button>
-              <Button onClick={() => navigate({ to: '/tasks' })} className="text-xs font-bold bg-[#2D8CFF] text-white">
-                + Assign Task
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <button onClick={() => navigate({ to: '/rooms-360' })} className="p-2.5 rounded border border-[#1C3035]/30 text-xs font-bold text-left bg-[#F3EEE3]">
-                Rooms 360 →
-              </button>
-              <button onClick={() => navigate({ to: '/complaints' })} className="p-2.5 rounded border border-[#1C3035]/30 text-xs font-bold text-left bg-[#F3EEE3]">
-                Guest Requests →
-              </button>
-              <button onClick={() => navigate({ to: '/tasks' })} className="p-2.5 rounded border border-[#1C3035]/30 text-xs font-bold text-left bg-[#F3EEE3]">
-                Tasks to Do →
-              </button>
-              <button onClick={() => navigate({ to: '/staff' })} className="p-2.5 rounded border border-[#1C3035]/30 text-xs font-bold text-left bg-[#F3EEE3]">
-                Staff on Duty →
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 4: EDITORIAL HOTEL ROOM DIRECTORY & FLOOR BOARD
-          Architectural Room Directory with Clean Hospitality Typography
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="space-y-6">
+      <section className="space-y-4">
         
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[#1C3035]/20 dark:border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[#1C3035]/20 dark:border-slate-800 pb-3">
           <div className="space-y-0.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#5B9EA3]">
-              ZONE 04 · RESORT DIRECTORY
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-[#1C3035] dark:text-white">
-              Hotel Room Directory
-            </h2>
+            <div className="flex items-center gap-2">
+              <Building className="size-4 text-[#5B9EA3]" />
+              <h2 className="text-base sm:text-lg font-black uppercase tracking-tight text-[#1C3035] dark:text-white">
+                Live Resort & Room Board
+              </h2>
+            </div>
             <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
-              Select any room to inspect occupancy, assign housekeeping, or change check-in readiness.
+              Interactive property floor view. Select any room to inspect occupancy, guest needs, or change readiness.
             </p>
           </div>
 
@@ -1128,55 +608,54 @@ function DashboardPage() {
         {/* ── Visual Room Board & Context Panel Layout ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* LEFT: 20-Room Physical Architectural Directory (8 cols on lg) */}
-          <div className="lg:col-span-8 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-6 shadow-[4px_4px_0px_#1C3035] space-y-6">
+          {/* LEFT: 20-Room Physical Resort Board (8 cols on lg) */}
+          <div className="lg:col-span-8 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-6">
             
             {/* Status Legend */}
             <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#1C3035]/15 dark:border-slate-800 text-xs font-bold">
               <span className="text-slate-500 uppercase text-[10px] tracking-wider font-black">
-                Directory States:
+                Room State Key:
               </span>
               <div className="flex flex-wrap items-center gap-4">
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2.5 rounded-full bg-[#5B9EA3]" />
+                  <span className="size-3 rounded-xs bg-[#5B9EA3]" />
                   <span>Ready ({readyCount})</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2.5 rounded-full bg-[#1C3035] dark:bg-slate-700" />
+                  <span className="size-3 rounded-xs bg-[#1C3035] dark:bg-slate-700" />
                   <span>Occupied ({occupiedCount})</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2.5 rounded-full bg-[#78AAA0]" />
+                  <span className="size-3 rounded-xs bg-[#78AAA0]" />
                   <span>Cleaning ({cleaningCount})</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2.5 rounded-full bg-[#C96B56]" />
+                  <span className="size-3 rounded-xs bg-[#C96B56]" />
                   <span>Needs Service ({needsServiceCount})</span>
                 </span>
               </div>
             </div>
 
-            {/* Architectural Directory List (Large Room Numbers + Minimal Typography) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {/* Room Plaques Grid (Physical Hospitality Signage Design) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
               {displayedRooms.map((room) => {
                 const isSelected = selectedRoom?.id === room.id
                 
+                // Color mapping for physical signs
+                let badgeBg = 'bg-[#1C3035] text-[#FBF9F4]'
                 let statusLabel = 'OCCUPIED'
-                let statusColor = 'text-slate-500'
-                let accentBar = 'bg-[#1C3035]'
+                let borderStyle = 'border-[#1C3035]/30'
 
                 if (room.status === 'ready') {
+                  badgeBg = 'bg-[#5B9EA3] text-white'
                   statusLabel = 'READY'
-                  statusColor = 'text-[#5B9EA3]'
-                  accentBar = 'bg-[#5B9EA3]'
                 } else if (room.status === 'cleaning') {
+                  badgeBg = 'bg-[#78AAA0] text-[#1C3035]'
                   statusLabel = 'CLEANING'
-                  statusColor = 'text-[#78AAA0]'
-                  accentBar = 'bg-[#78AAA0]'
                 } else if (room.status === 'needs_service') {
+                  badgeBg = 'bg-[#C96B56] text-white animate-pulse'
                   statusLabel = 'NEEDS SERVICE'
-                  statusColor = 'text-[#C96B56]'
-                  accentBar = 'bg-[#C96B56]'
+                  borderStyle = 'border-[#C96B56] ring-2 ring-[#C96B56]/30'
                 }
 
                 return (
@@ -1191,21 +670,19 @@ function DashboardPage() {
                         setSelectedRoom(room)
                       }
                     }}
-                    className={`p-3.5 rounded-lg border-2 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] text-left relative overflow-hidden focus:outline-none ${
+                    className={`p-3.5 rounded-lg border-2 bg-[#F3EEE3]/80 dark:bg-slate-800/80 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] text-left focus:outline-none ${borderStyle} ${
                       isSelected
-                        ? 'border-[#1C3035] bg-[#E7F0EC] dark:bg-slate-800 shadow-[3px_3px_0px_#1C3035] -translate-y-0.5'
-                        : 'border-[#1C3035]/20 bg-[#F3EEE3]/80 hover:border-[#1C3035]/60 hover:bg-[#F3EEE3]'
+                        ? 'border-[#2D8CFF] ring-2 ring-[#2D8CFF] shadow-[3px_3px_0px_#2D8CFF] -translate-y-0.5'
+                        : 'hover:border-[#1C3035] hover:shadow-[2px_2px_0px_#1C3035] hover:-translate-y-0.5'
                     }`}
                   >
-                    {/* Architectural left accent indicator */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${accentBar}`} />
-
-                    <div className="pl-1">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-2xl font-black text-[#1C3035] dark:text-white tracking-tight">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        {/* Large Architectural Room Number */}
+                        <span className="text-xl sm:text-2xl font-black text-[#1C3035] dark:text-white tracking-tight">
                           {room.number}
                         </span>
-                        <span className={`text-[9px] font-black uppercase tracking-wider ${statusColor}`}>
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${badgeBg}`}>
                           {statusLabel}
                         </span>
                       </div>
@@ -1215,8 +692,8 @@ function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* Context metadata */}
-                    <div className="pt-2 border-t border-[#1C3035]/10 mt-2 pl-1">
+                    {/* Small Context Info */}
+                    <div className="pt-2 border-t border-[#1C3035]/10 dark:border-slate-700/60 mt-2">
                       {room.status === 'needs_service' ? (
                         <p className="text-[10px] font-extrabold text-[#C96B56] truncate">
                           ⚠️ AC Issue · Rahul
@@ -1231,7 +708,7 @@ function DashboardPage() {
                         </p>
                       ) : (
                         <p className="text-[10px] font-bold text-[#5B9EA3] truncate">
-                          ✓ Check-in Ready
+                          ✓ Available Check-in
                         </p>
                       )}
                     </div>
@@ -1256,10 +733,10 @@ function DashboardPage() {
             </div>
           </div>
 
-          {/* RIGHT: CONTEXT PANEL (4 cols on lg) */}
-          <div className="lg:col-span-4 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
+          {/* RIGHT: PROGRESSIVE DISCLOSURE CONTEXT PANEL (4 cols on lg) */}
+          <div className="lg:col-span-4 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
             {selectedRoom ? (
-              <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="space-y-4">
                 
                 {/* Panel Header */}
                 <div className="flex items-start justify-between border-b-2 border-[#1C3035]/15 dark:border-slate-800 pb-3">
@@ -1288,7 +765,7 @@ function DashboardPage() {
                   </span>
                 </div>
 
-                {/* Details Table */}
+                {/* Details Table / Plaque */}
                 <div className="space-y-2.5 text-xs">
                   <div className="p-3 rounded-lg bg-[#F3EEE3]/80 dark:bg-slate-800/60 border border-[#1C3035]/15 space-y-1">
                     <span className="text-[10px] font-black uppercase text-slate-500">Guest Information</span>
@@ -1334,6 +811,10 @@ function DashboardPage() {
 
                 {/* Direct Hospitality Actions */}
                 <div className="space-y-2 pt-2 border-t border-[#1C3035]/15 dark:border-slate-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
+                    Operational Verbs:
+                  </span>
+
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       onClick={() => navigate({ to: '/rooms-360' })}
@@ -1378,10 +859,392 @@ function DashboardPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 5: RESORT INTELLIGENCE & DATA ANALYSIS
-          Calm strategic manager's workspace placed strictly at the bottom
+          ZONE 3: TODAY'S SHIFT (Operational Shift Planner Timeline)
+          Connected horizontal strip answering "What does staff need to do?"
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-6 sm:p-8 shadow-[5px_5px_0px_#1C3035] space-y-6">
+      <section className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <Clock className="size-4 text-[#2D8CFF]" />
+            <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
+              Today's Shift · Operations Schedule
+            </h2>
+          </div>
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            Flow of the Resort Day
+          </span>
+        </div>
+
+        {/* Horizontal Shift Timeline Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 pt-1">
+          {SHIFT_MILESTONES.map((item, idx) => (
+            <div
+              key={idx}
+              className={`p-4 rounded-lg border-2 transition-all relative flex flex-col justify-between ${
+                item.status === 'active'
+                  ? 'border-[#2D8CFF] bg-[#2D8CFF]/10 ring-2 ring-[#2D8CFF]/30 shadow-[2px_2px_0px_#2D8CFF]'
+                  : item.status === 'completed'
+                  ? 'border-[#1C3035]/20 bg-[#F3EEE3]/50 dark:bg-slate-800/40 opacity-80'
+                  : 'border-[#1C3035]/20 bg-[#FBF9F4] dark:bg-slate-800/60'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-mono font-black tracking-wider text-[#1C3035] dark:text-white">
+                    {item.time}
+                  </span>
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
+                    item.status === 'active'
+                      ? 'bg-[#2D8CFF] text-white'
+                      : item.status === 'completed'
+                      ? 'bg-emerald-700 text-white'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {item.status === 'active' ? 'NOW' : item.status}
+                  </span>
+                </div>
+
+                <h3 className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
+                  {item.title}
+                </h3>
+                <div className="text-xs font-extrabold text-[#5B9EA3] mt-0.5">
+                  {item.count}
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium mt-2 pt-2 border-t border-[#1C3035]/10 dark:border-slate-700">
+                {item.note}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 4 & 5: ASYMMETRIC GRID: NEEDS ATTENTION QUEUE + TODAY'S ACTIVITY
+          Human hospitality language with direct verbs
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* LEFT: NEEDS ATTENTION QUEUE (7 cols on lg) */}
+        <div className="lg:col-span-7 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="size-4 text-[#C96B56]" />
+              <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
+                Needs Attention · Operational Queue
+              </h2>
+            </div>
+            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#C96B56]/15 text-[#C96B56] border border-[#C96B56]/30 uppercase tracking-wider">
+              {attentionItems.length} Urgent Items
+            </span>
+          </div>
+
+          {/* Operational Queue Rows */}
+          <div className="space-y-3">
+            {attentionItems.map((item) => (
+              <div
+                key={item.id}
+                className="p-3.5 rounded-lg border-2 border-[#1C3035]/20 dark:border-slate-800 bg-[#F3EEE3]/70 dark:bg-slate-800/50 hover:border-[#1C3035] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase ${item.badgeColor}`}>
+                      {item.location}
+                    </span>
+                    <span className="text-[10px] font-extrabold uppercase text-slate-500">
+                      {item.area} · {item.urgency}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400">
+                      {item.timestamp}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
+                    {item.problem}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    Responsible: <span className="font-bold text-[#1C3035] dark:text-slate-200">{item.assignedTo}</span>
+                  </p>
+                </div>
+
+                <Button
+                  onClick={() => navigate({ to: item.actionPath })}
+                  className="rounded-lg px-4 py-2 h-auto text-xs font-black bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white border-2 border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all gap-1.5 shrink-0 self-start sm:self-center cursor-pointer"
+                >
+                  <span>{item.actionLabel}</span>
+                  <ArrowRight className="size-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT: TODAY'S ACTIVITY (5 cols on lg) */}
+        <div className="lg:col-span-5 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#78AAA0]" />
+              <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-[#1C3035] dark:text-white">
+                Today's Activity
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate({ to: '/audit' })}
+              className="text-xs font-black text-[#2D8CFF] hover:underline cursor-pointer"
+            >
+              Full Log →
+            </button>
+          </div>
+
+          {/* Activity Feed */}
+          <div className="space-y-2.5 text-xs">
+            {[
+              { time: '18:42', person: 'Rahul Sharma', room: 'Room 204', desc: 'completed AC repair unit inspection' },
+              { time: '18:31', person: 'Sneha Reddy', room: 'Room 305', desc: 'requested 2 extra bath towels' },
+              { time: '18:18', person: 'Housekeeping', room: 'Room 105', desc: 'marked ready for guest check-in' },
+              { time: '18:04', person: 'Priya Nair', room: 'Room 210', desc: 'assigned to evening turn-down inspection' },
+              { time: '17:52', person: 'Duty Manager', room: 'Room 201', desc: 'verified villa turnover with photo QA' },
+            ].map((act, idx) => (
+              <div
+                key={idx}
+                className="p-2.5 rounded-lg bg-[#F3EEE3]/60 dark:bg-slate-800/40 border border-[#1C3035]/15 dark:border-slate-700 flex items-start gap-2.5"
+              >
+                <span className="text-[11px] font-mono font-bold text-slate-500 w-12 shrink-0 pt-0.5">
+                  {act.time}
+                </span>
+                <p className="text-xs font-medium text-[#1C3035] dark:text-slate-200 leading-snug">
+                  <span className="font-extrabold text-[#1C3035] dark:text-white">{act.person}</span>{' '}
+                  ({act.room}) {act.desc}.
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-2 border-t border-[#1C3035]/10 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500">
+            <span>Real-time operations log</span>
+            <span className="text-[#5B9EA3]">✓ Live & Synchronized</span>
+          </div>
+        </div>
+
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 6: STAFF DESK + RESORT REFERENCE
+          Two-part operational console: Navigation on Left, Interactive Resort Reference on Right
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between border-b-2 border-[#1C3035]/20 dark:border-slate-800 pb-3">
+          <div className="space-y-0.5">
+            <h2 className="text-base sm:text-lg font-black uppercase tracking-tight text-[#1C3035] dark:text-white">
+              Staff Desk & Operations Console
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
+              Operational navigation rail paired with live physical resort reference imagery.
+            </p>
+          </div>
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            Hospitality Reference
+          </span>
+        </div>
+
+        {/* ── Two-Part Visual Experience (Left: Desk, Right: Resort Reference) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          
+          {/* LEFT: STAFF DESK & QUICK ACTIONS (7 cols on lg) */}
+          <div className="lg:col-span-7 flex flex-col justify-between space-y-4">
+            
+            {/* Quick Action Dock (Verbs First) */}
+            <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl border-2 border-[#1C3035] bg-[#D8C7AA]/30 dark:bg-slate-900 shadow-[3px_3px_0px_#1C3035]">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#1C3035] dark:text-slate-300 px-1">
+                Quick Actions:
+              </span>
+              <Button
+                onClick={() => navigate({ to: '/complaints' })}
+                className="rounded-lg text-xs font-black bg-[#C96B56] hover:bg-[#b55b46] text-white border border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer gap-1.5"
+              >
+                <ClipboardList className="size-3.5" />
+                <span>+ Report Issue</span>
+              </Button>
+
+              <Button
+                onClick={() => navigate({ to: '/tasks' })}
+                className="rounded-lg text-xs font-black bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white border border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer gap-1.5"
+              >
+                <CheckSquare className="size-3.5" />
+                <span>+ Assign Task</span>
+              </Button>
+
+              <Button
+                onClick={() => navigate({ to: '/rooms-360' })}
+                className="rounded-lg text-xs font-black bg-[#5B9EA3] hover:bg-[#4A878C] text-white border border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer gap-1.5"
+              >
+                <Camera className="size-3.5" />
+                <span>+ Check Room</span>
+              </Button>
+
+              <Button
+                onClick={() => navigate({ to: '/staff' })}
+                variant="outline"
+                className="rounded-lg text-xs font-black border-2 border-[#1C3035] bg-[#FBF9F4] text-[#1C3035] hover:bg-[#D8C7AA]/40 shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer gap-1.5"
+              >
+                <Users className="size-3.5" />
+                <span>+ View Staff</span>
+              </Button>
+
+              <Button
+                onClick={() => navigate({ to: '/verification' })}
+                variant="outline"
+                className="rounded-lg text-xs font-black border-2 border-[#1C3035] bg-[#FBF9F4] text-[#1C3035] hover:bg-[#D8C7AA]/40 shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer gap-1.5"
+              >
+                <ShieldCheck className="size-3.5 text-emerald-700" />
+                <span>+ Verify Work</span>
+              </Button>
+            </div>
+
+            {/* 10 Operational Rails (Hover & Focus reactive) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                { id: 'rooms-360', label: 'Rooms 360', path: '/rooms-360', icon: Camera, note: 'Virtual room directory', color: 'text-[#5B9EA3]' },
+                { id: 'complaints', label: 'Guest Requests', path: '/complaints', icon: ClipboardList, note: '8 active issues', color: 'text-[#C96B56]' },
+                { id: 'tasks', label: 'Tasks to Do', path: '/tasks', icon: CheckSquare, note: '4 dispatched', color: 'text-[#2D8CFF]' },
+                { id: 'staff', label: 'Staff on Duty', path: '/staff', icon: Users, note: '4 active roster', color: 'text-[#78AAA0]' },
+                { id: 'verification', label: 'Check Completed Work', path: '/verification', icon: ShieldCheck, note: 'Photo QA sign-off', color: 'text-emerald-700' },
+                { id: 'pricing', label: 'Room Rates', path: '/pricing', icon: TrendingUp, note: 'Competitor benchmarks', color: 'text-amber-700' },
+                { id: 'cancellation-risk', label: 'Bookings at Risk', path: '/cancellation-risk', icon: BrainCircuit, note: 'Retention steps', color: 'text-[#C96B56]' },
+                { id: 'recommendations', label: 'Guest Preferences', path: '/recommendations', icon: Sparkles, note: 'Semantic matching', color: 'text-[#5B9EA3]' },
+                { id: 'insights', label: 'Resort Reports', path: '/insights', icon: ChartNoAxesCombined, note: 'SLA & efficiency', color: 'text-[#2D8CFF]' },
+                { id: 'audit', label: 'Audit Trail', path: '/audit', icon: History, note: 'Governance logs', color: 'text-[#1C3035]' },
+              ].map((action) => {
+                const Icon = action.icon
+                const isHovered = hoveredDeskId === action.id
+
+                return (
+                  <div
+                    key={action.id}
+                    role="button"
+                    tabIndex={0}
+                    onMouseEnter={() => handleDeskItemHover(action.id)}
+                    onMouseLeave={handleDeskItemLeave}
+                    onFocus={() => handleDeskItemHover(action.id)}
+                    onBlur={handleDeskItemLeave}
+                    onTouchStart={() => handleDeskItemHover(action.id)}
+                    onClick={() => navigate({ to: action.path })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        navigate({ to: action.path })
+                      }
+                    }}
+                    className={`p-3.5 rounded-lg border-2 transition-all cursor-pointer flex flex-col justify-between focus:outline-none relative ${
+                      isHovered
+                        ? 'border-[#1C3035] dark:border-slate-300 shadow-[3px_3px_0px_#1C3035] dark:shadow-[3px_3px_0px_#0f172a] -translate-y-0.5 bg-[#F3EEE3] dark:bg-slate-800'
+                        : 'border-[#1C3035]/25 dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 hover:border-[#1C3035]'
+                    }`}
+                  >
+                    {isHovered && (
+                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#2D8CFF] rounded-r" />
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <Icon className={`size-4 ${action.color}`} />
+                      <ArrowUpRight className={`size-3.5 transition-colors ${
+                        isHovered ? 'text-[#2D8CFF]' : 'text-slate-400 group-hover:text-[#1C3035]'
+                      }`} />
+                    </div>
+
+                    <div className="pt-2 mt-1">
+                      <div className="text-xs sm:text-sm font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
+                        {action.label}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-semibold truncate">
+                        {action.note}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+          </div>
+
+          {/* RIGHT: RESORT REFERENCE VISUAL PANEL (5 cols on lg) */}
+          <div className="lg:col-span-5 rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-5 sm:p-6 shadow-[4px_4px_0px_#1C3035] dark:shadow-[4px_4px_0px_#0f172a] flex flex-col justify-between space-y-4">
+            
+            {/* Panel Header & Live Tag */}
+            <div className="flex items-center justify-between pb-3 border-b-2 border-[#1C3035]/15 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#5B9EA3] animate-pulse" />
+                <span className="text-xs font-black uppercase tracking-widest text-[#1C3035] dark:text-white">
+                  Resort Reference
+                </span>
+              </div>
+              <span className="text-[10px] font-black tracking-widest px-2.5 py-0.5 rounded bg-[#1C3035] text-[#FBF9F4] uppercase">
+                {activeDeskRef.tag}
+              </span>
+            </div>
+
+            {/* Dedicated Visual Object Frame with Smooth Transition */}
+            <div className="relative rounded-lg border-2 border-[#1C3035] dark:border-slate-700 overflow-hidden shadow-[3px_3px_0px_#1C3035] aspect-[16/10] sm:aspect-[4/3] bg-[#1C3035]">
+              <img
+                key={activeDeskRef.image}
+                src={activeDeskRef.image}
+                alt={activeDeskRef.title}
+                className="w-full h-full object-cover object-center transition-opacity duration-400 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1C3035]/80 via-transparent to-transparent pointer-events-none" />
+
+              {/* Architectural Reference ID Badge */}
+              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between pointer-events-none text-[#FBF9F4]">
+                <span className="text-[10px] font-mono font-bold tracking-widest uppercase opacity-90">
+                  REF: {hoveredDeskId ? hoveredDeskId.toUpperCase() : 'RESORT-CORE'}
+                </span>
+                <span className="text-[10px] font-black tracking-wider text-[#D8C7AA] uppercase">
+                  Physical Context
+                </span>
+              </div>
+            </div>
+
+            {/* Contextual Hospitality Caption */}
+            <div className="space-y-1 pt-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 className="text-xl sm:text-2xl font-black text-[#1C3035] dark:text-white uppercase tracking-tight">
+                  {activeDeskRef.title}
+                </h3>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
+                  Hospitality Focus
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 leading-relaxed min-h-[40px]">
+                {activeDeskRef.caption}
+              </p>
+            </div>
+
+            {/* Direct Route Action Shortcut */}
+            <div className="pt-2 border-t border-[#1C3035]/15 dark:border-slate-800 flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold text-slate-500 truncate">
+                Click feature to inspect area:
+              </span>
+              <Button
+                onClick={() => navigate({ to: activeDeskRef.path })}
+                className="rounded-lg text-xs font-black bg-[#2D8CFF] hover:bg-[#1A7BFA] text-white border-2 border-[#1C3035] shadow-[2px_2px_0px_#1C3035] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer gap-1.5 shrink-0"
+              >
+                <span>Open {activeDeskRef.title}</span>
+                <ArrowRight className="size-3.5" />
+              </Button>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 7: BOTTOM — RESORT INTELLIGENCE / DATA ANALYSIS
+          Placed strictly at the bottom. Wide dynamic manager workspace.
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="rounded-xl border-2 border-[#1C3035] dark:border-slate-800 bg-[#FBF9F4] dark:bg-slate-900 p-6 sm:p-7 shadow-[5px_5px_0px_#1C3035] space-y-6">
         
         {/* Workspace Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-[#1C3035]/15 dark:border-slate-800 pb-4">
@@ -1428,7 +1291,7 @@ function DashboardPage() {
           
           {/* TAB 1: OCCUPANCY TREND */}
           {analyticsTab === 'occupancy' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-black uppercase text-[#1C3035] dark:text-white">
@@ -1502,7 +1365,7 @@ function DashboardPage() {
 
           {/* TAB 2: ROOM READINESS */}
           {analyticsTab === 'readiness' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-black uppercase text-[#1C3035] dark:text-white">
@@ -1571,7 +1434,7 @@ function DashboardPage() {
 
           {/* TAB 3: GUEST REQUESTS */}
           {analyticsTab === 'requests' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-black uppercase text-[#1C3035] dark:text-white">
@@ -1620,7 +1483,7 @@ function DashboardPage() {
 
           {/* TAB 4: TASK FLOW */}
           {analyticsTab === 'flow' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-black uppercase text-[#1C3035] dark:text-white">
@@ -1669,7 +1532,7 @@ function DashboardPage() {
 
           {/* TAB 5: ROOM RATES */}
           {analyticsTab === 'rates' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-black uppercase text-[#1C3035] dark:text-white">
@@ -1715,7 +1578,7 @@ function DashboardPage() {
 
           {/* TAB 6: BOOKINGS AT RISK */}
           {analyticsTab === 'cancellations' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-black uppercase text-[#1C3035] dark:text-white">
