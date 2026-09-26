@@ -21,6 +21,7 @@ import { Route as LayoutInsightsRouteImport } from './routes/_layout.insights'
 import { Route as LayoutPricingRouteImport } from './routes/_layout.pricing'
 import { Route as LayoutRecommendationsRouteImport } from './routes/_layout.recommendations'
 import { Route as LayoutResort360RouteImport } from './routes/_layout.resort-360'
+import { Route as LayoutRooms360RouteImport } from './routes/_layout.rooms-360'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout.settings'
 import { Route as LayoutStaffRouteImport } from './routes/_layout.staff'
 import { Route as LayoutTasksRouteImport } from './routes/_layout.tasks'
@@ -85,6 +86,11 @@ const LayoutResort360Route = LayoutResort360RouteImport.update({
   path: '/resort-360',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutRooms360Route = LayoutRooms360RouteImport.update({
+  id: '/rooms-360',
+  path: '/rooms-360',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof LayoutPricingRoute
   '/recommendations': typeof LayoutRecommendationsRoute
   '/resort-360': typeof LayoutResort360Route
+  '/rooms-360': typeof LayoutRooms360Route
   '/settings': typeof LayoutSettingsRoute
   '/staff': typeof LayoutStaffRoute
   '/tasks': typeof LayoutTasksRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof LayoutPricingRoute
   '/recommendations': typeof LayoutRecommendationsRoute
   '/resort-360': typeof LayoutResort360Route
+  '/rooms-360': typeof LayoutRooms360Route
   '/settings': typeof LayoutSettingsRoute
   '/staff': typeof LayoutStaffRoute
   '/tasks': typeof LayoutTasksRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/_layout/pricing': typeof LayoutPricingRoute
   '/_layout/recommendations': typeof LayoutRecommendationsRoute
   '/_layout/resort-360': typeof LayoutResort360Route
+  '/_layout/rooms-360': typeof LayoutRooms360Route
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/staff': typeof LayoutStaffRoute
   '/_layout/tasks': typeof LayoutTasksRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/recommendations'
     | '/resort-360'
+    | '/rooms-360'
     | '/settings'
     | '/staff'
     | '/tasks'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/recommendations'
     | '/resort-360'
+    | '/rooms-360'
     | '/settings'
     | '/staff'
     | '/tasks'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/_layout/pricing'
     | '/_layout/recommendations'
     | '/_layout/resort-360'
+    | '/_layout/rooms-360'
     | '/_layout/settings'
     | '/_layout/staff'
     | '/_layout/tasks'
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutResort360RouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/rooms-360': {
+      id: '/_layout/rooms-360'
+      path: '/rooms-360'
+      fullPath: '/rooms-360'
+      preLoaderRoute: typeof LayoutRooms360RouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -346,6 +365,7 @@ interface LayoutRouteChildren {
   LayoutPricingRoute: typeof LayoutPricingRoute
   LayoutRecommendationsRoute: typeof LayoutRecommendationsRoute
   LayoutResort360Route: typeof LayoutResort360Route
+  LayoutRooms360Route: typeof LayoutRooms360Route
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutStaffRoute: typeof LayoutStaffRoute
   LayoutTasksRoute: typeof LayoutTasksRoute
@@ -362,6 +382,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutPricingRoute: LayoutPricingRoute,
   LayoutRecommendationsRoute: LayoutRecommendationsRoute,
   LayoutResort360Route: LayoutResort360Route,
+  LayoutRooms360Route: LayoutRooms360Route,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutStaffRoute: LayoutStaffRoute,
   LayoutTasksRoute: LayoutTasksRoute,
