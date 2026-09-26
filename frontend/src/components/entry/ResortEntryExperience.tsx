@@ -67,16 +67,16 @@ export function ResortEntryExperience({
       {/* ── View 2: Daytime Authentication Page ─────────────────── */}
       {(view === 'login' || isTransitioning) && (
         <div className="relative w-full min-h-screen flex items-center justify-center overflow-x-hidden overflow-y-auto">
-          {/* Background image during auth with soft, bright daylight */}
+          {/* Background image during auth with luxury reception interior */}
           <div className="fixed inset-0 pointer-events-none z-0">
             <img
-              src="/images/resort-day-hero.jpg"
-              alt="Smart Resort 360"
-              className="w-full h-full object-cover object-center filter brightness-[1.03] contrast-[1.01]"
+              src="/images/resort-reception.png"
+              alt="Smart Resort 360 Reception"
+              className="w-full h-full object-cover object-center filter brightness-[0.96] contrast-[1.03]"
             />
-            {/* Gentle daylight resort atmospheric tint */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/45 to-sky-950/20" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-white/35" />
+            {/* Subtle atmospheric vignette preserving the luxury reception architecture & warm lighting */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-black/30" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/25" />
           </div>
 
           {/* Main Layout: Left branding + Right glass card */}
@@ -92,28 +92,28 @@ export function ResortEntryExperience({
               }}
             >
               {/* Eyebrow */}
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur-md border border-[#2D8CFF]/20 shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-[#2D8CFF]" />
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-[#2D8CFF] shadow-[0_0_8px_#2D8CFF]" />
                 <span className="text-[12px] sm:text-[14px] font-bold tracking-[0.24em] text-[#2D8CFF] uppercase font-sans">
                   Smart Resort 360
                 </span>
               </div>
 
-              {/* Main Heading (Much larger: 56–70px, bold, tight line-height) */}
-              <h1 className="text-5xl sm:text-6xl lg:text-[64px] xl:text-[70px] font-extrabold text-[#172B3A] tracking-tight leading-[0.98] lg:leading-[1.0]">
-                Your stay.<br />
-                <span className="text-[#2D8CFF]">Reimagined.</span>
+              {/* Main Heading (56–70px, bold, tight line-height, adapted to luxury reception) */}
+              <h1 className="text-5xl sm:text-6xl lg:text-[64px] xl:text-[70px] font-extrabold tracking-tight leading-[0.98] lg:leading-[1.0]">
+                <span className="text-[#FDFBF7] drop-shadow-[0_2px_14px_rgba(0,0,0,0.6)]">Your stay.</span><br />
+                <span className="text-[#2D8CFF] drop-shadow-[0_2px_16px_rgba(45,140,255,0.4)]">Reimagined.</span>
               </h1>
 
               {/* Supporting Text (18–20px) */}
-              <p className="text-[#475569] text-[18px] lg:text-[20px] font-medium leading-relaxed max-w-lg">
+              <p className="text-[#E2E8F0] text-[18px] lg:text-[20px] font-medium leading-relaxed max-w-lg drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
                 Seamless guest experiences, smarter resort operations.
               </p>
 
               {/* Decorative Luxury Divider & Pillars */}
               <div className="pt-2 flex flex-col items-center lg:items-start space-y-3.5">
-                <div className="h-[2.5px] w-20 bg-[#2D8CFF]/50 rounded-full" />
-                <div className="text-[12px] sm:text-[13px] font-semibold tracking-[0.16em] text-[#64748B] uppercase">
+                <div className="h-[2.5px] w-20 bg-[#2D8CFF] rounded-full shadow-[0_0_10px_rgba(45,140,255,0.6)]" />
+                <div className="text-[12px] sm:text-[13px] font-semibold tracking-[0.16em] text-[#CBD5E1] uppercase drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
                   Guest Experience • Operations • Intelligence
                 </div>
               </div>
@@ -125,8 +125,8 @@ export function ResortEntryExperience({
                 exitPhase === 'idle'
                   ? 'animate-login-right-slide'
                   : exitPhase === 'card-to-center' || exitPhase === 'center-hold'
-                  ? 'translate-x-0 lg:-translate-x-[calc(42vw-250px)] translate-y-0 transition-transform duration-800 ease-[cubic-bezier(0.25,1,0.5,1)]'
-                  : 'translate-x-0 lg:-translate-x-[calc(42vw-250px)] translate-y-[125vh] transition-transform duration-800 ease-[cubic-bezier(0.4,0,0.2,1)]'
+                  ? 'translate-x-0 lg:-translate-x-[calc(42vw-260px)] translate-y-0 transition-transform duration-800 ease-[cubic-bezier(0.25,1,0.5,1)]'
+                  : 'translate-x-0 lg:-translate-x-[calc(42vw-260px)] translate-y-[125vh] transition-transform duration-800 ease-[cubic-bezier(0.4,0,0.2,1)]'
               }`}
             >
               <ResortAuthCard

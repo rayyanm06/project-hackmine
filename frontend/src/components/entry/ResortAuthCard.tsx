@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   AlertCircle,
   Loader2,
-  KeyRound,
   ArrowLeft,
 } from 'lucide-react'
 import { AuthService, getFriendlyErrorMessage, type AuthUser } from '@/lib/auth'
@@ -123,26 +122,18 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
 
   return (
     <div
-      className="relative w-full max-w-[500px] rounded-3xl bg-white/50 backdrop-blur-2xl backdrop-saturate-140 border border-white/80 p-8 sm:p-10 shadow-[0_24px_64px_-12px_rgba(45,140,255,0.14),0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.95)] transition-all duration-500"
+      className="relative w-full max-w-[520px] rounded-3xl bg-white/60 hover:bg-white/[0.63] backdrop-blur-2xl backdrop-saturate-150 border border-white/80 p-8 sm:p-9 md:p-10 shadow-[0_24px_64px_-12px_rgba(15,23,42,0.35),0_0_0_1px_rgba(255,255,255,0.7),0_8px_32px_rgba(45,140,255,0.15)] transition-all duration-300"
     >
       {currentView === 'forgot-password' ? (
         /* ── View: Password Reset ────────────────────────────────── */
         <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#2D8CFF]/10 border border-[#2D8CFF]/25 shadow-xs mb-1">
-              <KeyRound className="w-5 h-5 text-[#2D8CFF]" />
-            </div>
-            <div className="text-xs font-bold tracking-[0.24em] text-[#2D8CFF] uppercase font-sans">
-              Smart Resort 360
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#172B3A]">
-                Reset your password
-              </h2>
-              <p className="text-[#556987] text-[15px] font-medium leading-relaxed">
-                Enter your email to receive a secure reset link.
-              </p>
-            </div>
+          <div className="text-center space-y-1.5 pb-1">
+            <h2 className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#172B3A]">
+              Reset your password
+            </h2>
+            <p className="text-[#556987] text-[15px] font-medium leading-relaxed">
+              Enter your email to receive a secure reset link.
+            </p>
           </div>
 
           {errorMessage && (
@@ -204,32 +195,16 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
       ) : (
         /* ── Main View: Sign In / Create Account ──────────────────── */
         <div className="space-y-6">
-          {/* Header & Resort Coastal Emblem */}
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#2D8CFF]/10 border border-[#2D8CFF]/25 shadow-xs mb-1">
-              <svg
-                className="w-6 h-6 text-[#2D8CFF]"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2C11.5 5 9 8 5 9C9 10 11.5 13 12 16C12.5 13 15 10 19 9C15 8 12.5 5 12 2Z" />
-                <path d="M12 16C10.5 18 9 20 6 21C9 21.5 11 22 12 22C13 22 15 21.5 18 21C15 20 13.5 18 12 16Z" opacity="0.8" />
-                <path d="M12 7C12 9 10.5 11 8 11.5C10.5 12 12 14 12 16C12 14 13.5 12 16 11.5C13.5 11 12 9 12 7Z" opacity="0.6" />
-              </svg>
-            </div>
-            <div className="text-xs font-bold tracking-[0.24em] text-[#2D8CFF] uppercase font-sans">
-              Smart Resort 360
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-2xl sm:text-[30px] font-bold tracking-tight text-[#172B3A]">
-                {currentView === 'register' ? 'Create your account' : 'Sign in'}
-              </h2>
-              <p className="text-[#556987] text-[15px] font-medium">
-                {currentView === 'register'
-                  ? 'Start your Smart Resort 360 experience.'
-                  : 'Access your Smart Resort 360 experience.'}
-              </p>
-            </div>
+          {/* Header without duplicate logo or eyebrow */}
+          <div className="text-center space-y-1.5 pb-1">
+            <h2 className="text-3xl sm:text-[36px] font-bold tracking-tight text-[#172B3A]">
+              {currentView === 'register' ? 'Create your account' : 'Sign in'}
+            </h2>
+            <p className="text-[#556987] text-[16px] font-medium">
+              {currentView === 'register'
+                ? 'Start your Smart Resort 360 experience.'
+                : 'Access your Smart Resort 360 experience.'}
+            </p>
           </div>
 
           {/* Mode Selector Tabs: [ Guest / User ] [ Admin / Staff ] */}
