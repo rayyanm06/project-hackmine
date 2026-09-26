@@ -43,8 +43,7 @@ export function NavGroup({ title, titleKey, items }: NavGroupProps) {
     <SidebarGroup>
       {/* Refined group label — small, spaced, restrained */}
       <SidebarGroupLabel
-        className='text-[0.6875rem] font-semibold tracking-[0.12em] uppercase text-muted-foreground/70 px-3 mb-0.5'
-        style={{ fontFamily: 'var(--font-cormorant)' }}
+        className='text-[0.6875rem] font-bold tracking-[0.14em] uppercase text-slate-400 dark:text-slate-500 px-3 mb-1'
       >
         {groupLabel}
       </SidebarGroupLabel>
@@ -69,14 +68,14 @@ export function NavGroup({ title, titleKey, items }: NavGroupProps) {
 
 function NavBadge({ children }: { children: ReactNode }) {
   return (
-    <Badge className='rounded-sm px-1 py-0 text-[0.6875rem] font-semibold tracking-wide'>
+    <Badge className='rounded-full px-1.5 py-0 text-[10px] font-bold tracking-wide bg-[#2D8CFF]/15 text-[#2D8CFF] border border-[#2D8CFF]/30'>
       {children}
     </Badge>
   )
 }
 
 function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
-  const { setOpenMobile } = useSidebar()
+  const { setOpenMobile, setOpen } = useSidebar()
   const { t } = useI18n()
   const isActive = checkIsActive(href, item)
   const label = item.titleKey ? t(item.titleKey) : item.title
@@ -88,13 +87,12 @@ function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
         tooltip={label}
         className={
           isActive
-            ? 'border-l-2 border-[var(--violet-deep)] bg-[var(--violet-surface)] text-[var(--violet-deep)] pl-[calc(0.75rem-2px)] font-medium'
-            : 'border-l-2 border-transparent pl-[calc(0.75rem-2px)] text-sidebar-foreground/80 hover:text-sidebar-foreground'
+            ? 'border-l-2 border-[#2D8CFF] bg-[#2D8CFF]/10 text-[#2D8CFF] pl-[calc(0.75rem-2px)] font-bold rounded-r-xl'
+            : 'border-l-2 border-transparent pl-[calc(0.75rem-2px)] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70 font-medium rounded-r-xl'
         }
-        style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}
       >
-        <Link to={item.url} onClick={() => setOpenMobile(false)}>
-          {item.icon && <item.icon className='opacity-70' />}
+        <Link to={item.url} onClick={() => { setOpenMobile(false); setOpen(false); }}>
+          {item.icon && <item.icon className={isActive ? 'opacity-100 text-[#2D8CFF]' : 'opacity-70'} />}
           <span>{label}</span>
           {item.badge && <NavBadge>{item.badge}</NavBadge>}
         </Link>
@@ -110,7 +108,7 @@ function SidebarMenuCollapsible({
   item: NavCollapsible
   href: string
 }) {
-  const { setOpenMobile } = useSidebar()
+  const { setOpenMobile, setOpen } = useSidebar()
   const { t } = useI18n()
   const label = item.titleKey ? t(item.titleKey) : item.title
   return (
@@ -123,8 +121,7 @@ function SidebarMenuCollapsible({
         <CollapsibleTrigger asChild>
           <SidebarMenuButton
             tooltip={label}
-            className='border-l-2 border-transparent pl-[calc(0.75rem-2px)] text-sidebar-foreground/80 hover:text-sidebar-foreground'
-            style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}
+            className='border-l-2 border-transparent pl-[calc(0.75rem-2px)] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70 font-medium rounded-r-xl'
           >
             {item.icon && <item.icon className='opacity-70' />}
             <span>{label}</span>
@@ -141,9 +138,9 @@ function SidebarMenuCollapsible({
                   <SidebarMenuSubButton
                     asChild
                     isActive={checkIsActive(href, subItem)}
-                    style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9rem' }}
+                    className='rounded-lg text-xs'
                   >
-                    <Link to={subItem.url} onClick={() => setOpenMobile(false)}>
+                    <Link to={subItem.url} onClick={() => { setOpenMobile(false); setOpen(false); }}>
                       {subItem.icon && <subItem.icon className='opacity-60' />}
                       <span>{subLabel}</span>
                       {subItem.badge && <NavBadge>{subItem.badge}</NavBadge>}
@@ -167,6 +164,7 @@ function SidebarMenuCollapsedDropdown({
   href: string
 }) {
   const { t } = useI18n()
+  const { setOpenMobile, setOpen } = useSidebar()
   const label = item.titleKey ? t(item.titleKey) : item.title
   return (
     <SidebarMenuItem>
@@ -176,7 +174,6 @@ function SidebarMenuCollapsedDropdown({
             tooltip={label}
             isActive={checkIsActive(href, item)}
             className='border-l-2 border-transparent pl-[calc(0.75rem-2px)]'
-            style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}
           >
             {item.icon && <item.icon className='opacity-70' />}
             <span>{label}</span>
@@ -184,10 +181,8 @@ function SidebarMenuCollapsedDropdown({
             <ChevronRight className='ms-auto size-3.5 opacity-50 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
-        <DropdownMenuContent side='right' align='start' sideOffset={4}>
-          <DropdownMenuLabel
-            style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.875rem' }}
-          >
+        <DropdownMenuContent side='right' align='start' sideOffset={4} className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900">
+          <DropdownMenuLabel className="text-xs font-bold text-slate-800 dark:text-slate-200">
             {label} {item.badge ? `(${item.badge})` : ''}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -197,8 +192,8 @@ function SidebarMenuCollapsedDropdown({
               <DropdownMenuItem key={`${sub.title}-${sub.url}`} asChild>
                 <Link
                   to={sub.url}
-                  className={`${checkIsActive(href, sub) ? 'bg-secondary' : ''}`}
-                  style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}
+                  onClick={() => { setOpenMobile(false); setOpen(false); }}
+                  className={`rounded-lg text-xs font-semibold ${checkIsActive(href, sub) ? 'bg-[#2D8CFF]/10 text-[#2D8CFF]' : ''}`}
                 >
                   {sub.icon && <sub.icon className='opacity-70' />}
                   <span className='max-w-52 text-wrap'>{subLabel}</span>

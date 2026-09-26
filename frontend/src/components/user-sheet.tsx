@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import { AuthService } from '@/lib/auth'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 export type UserSheetTab = 'profile' | 'account' | 'billing' | 'notifications'
@@ -50,12 +51,19 @@ function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.R
 }
 
 // ── Profile Tab ────────────────────────────────────────────────────────────
-function ProfileTab() {
-  const [name,  setName]  = useState('Smart Resort User')
-  const [email, setEmail] = useState('user@smartresort360.com')
+function ProfileTab({ user }: { user?: { name: string; email: string; avatar: string; role?: string } }) {
+  const authUser = AuthService.getCurrentUser()
+  const initialName = user?.name || authUser?.displayName || authUser?.email?.split('@')[0] || 'Operations Lead'
+  const initialEmail = user?.email || authUser?.email || 'operations@smartresort360.com'
+  const initialRole = user?.role || authUser?.role || 'Staff'
+
+  const [name,  setName]  = useState(initialName)
+  const [email, setEmail] = useState(initialEmail)
   const [phone, setPhone] = useState('+91 98765 43210')
-  const [role,  setRole]  = useState('Resort Manager')
+  const [role,  setRole]  = useState(initialRole)
   const [dirty, setDirty] = useState(false)
+
+  const initial = (name.charAt(0) || 'U').toUpperCase()
 
   function save(e: React.FormEvent) {
     e.preventDefault()
@@ -74,23 +82,23 @@ function ProfileTab() {
       {/* Avatar */}
       <div className='flex items-center gap-4'>
         <div className='relative'>
-          <Avatar className='h-16 w-16 rounded-sm'>
-            <AvatarImage src='/avatars/shadcn.jpg' alt={name} />
-            <AvatarFallback className='rounded-sm text-sm font-semibold bg-[var(--violet-surface)] text-[var(--violet-deep)]'>
-              SR
+          <Avatar className='h-16 w-16 rounded-full border border-slate-200 dark:border-slate-700'>
+            <AvatarImage src={user?.avatar || '/avatars/shadcn.jpg'} alt={name} />
+            <AvatarFallback className='rounded-full text-base font-bold bg-[#2D8CFF] text-white'>
+              {initial}
             </AvatarFallback>
           </Avatar>
           <button
             type='button'
             aria-label='Change profile photo'
-            className='absolute -bottom-1 -right-1 size-6 rounded-sm border border-border bg-background flex items-center justify-center hover:bg-muted transition-colors'
+            className='absolute -bottom-1 -right-1 size-6 rounded-full border border-border bg-background flex items-center justify-center hover:bg-muted transition-colors'
           >
             <Camera className='size-3 text-muted-foreground' />
           </button>
         </div>
         <div>
-          <p className='font-semibold' style={{ fontSize: '1rem' }}>{name}</p>
-          <p className='text-muted-foreground' style={{ fontSize: '0.875rem' }}>{role}</p>
+          <p className='font-bold text-slate-900 dark:text-slate-100 text-base'>{name}</p>
+          <p className='text-xs text-slate-500 font-medium'>{role}</p>
         </div>
       </div>
 
@@ -126,7 +134,7 @@ function ProfileTab() {
 }
 
 // ── Account Tab ────────────────────────────────────────────────────────────
-function AccountTab() {
+function AccountTab({ user }: { user?: { name: string; email: string; avatar: string; role?: string } }) {
   const [email2FA, setEmail2FA] = useState(true)
   const [loginAlerts, setLoginAlerts] = useState(true)
   const [sessions] = useState([
@@ -134,24 +142,25 @@ function AccountTab() {
     { device: 'Safari — iPhone',  location: 'Mumbai, IN', current: false, time: '2 days ago' },
   ])
 
+  const email = user?.email || AuthService.getCurrentUser()?.email || 'operations@smartresort360.com'
+  const role = user?.role || AuthService.getCurrentUser()?.role || 'Staff'
+
   return (
     <div className='space-y-6'>
 
       {/* Account info */}
-      <div className='rounded-sm border p-4 space-y-3'
-        style={{ background: 'var(--violet-surface)', borderColor: 'var(--violet-border)' }}>
+      <div className='rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-2 bg-slate-50/80 dark:bg-slate-850'>
         <div className='flex items-center gap-2'>
-          <BadgeCheck className='size-4 shrink-0' style={{ color: 'var(--violet-deep)' }} />
-          <span className='font-semibold' style={{ fontSize: '0.9375rem', color: 'var(--violet-deep)' }}>
-            Manager Account
+          <BadgeCheck className='size-4 shrink-0 text-[#2D8CFF]' />
+          <span className='font-bold text-xs text-slate-800 dark:text-slate-100'>
+            {role} Account
           </span>
-          <Badge variant='outline' className='ml-auto text-[0.75rem]'
-            style={{ background: 'var(--violet-muted)', color: 'var(--violet-deep)', borderColor: 'var(--violet-border)' }}>
+          <Badge variant='outline' className='ml-auto text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-200'>
             Active
           </Badge>
         </div>
-        <p className='text-muted-foreground' style={{ fontSize: '0.875rem' }}>
-          user@smartresort360.com · Member since Jan 2025
+        <p className='text-xs text-slate-500 font-medium'>
+          {email} · Member since 2025
         </p>
       </div>
 
@@ -400,23 +409,17 @@ export function UserSheet({ open, onOpenChange, initialTab = 'profile', onUpgrad
       >
         <SheetHeader className='px-6 pt-6 pb-4 border-b border-border shrink-0'>
           <div className='flex items-center gap-3'>
-            <Avatar className='h-10 w-10 rounded-sm'>
+            <Avatar className='h-10 w-10 rounded-full border border-slate-200 dark:border-slate-700'>
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className='rounded-sm text-[0.75rem] font-semibold bg-[var(--violet-surface)] text-[var(--violet-deep)]'>
-                SR
+              <AvatarFallback className='rounded-full text-xs font-bold bg-[#2D8CFF] text-white'>
+                {(user.name.charAt(0) || 'U').toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <SheetTitle
-                className='font-semibold leading-tight'
-                style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1.0625rem' }}
-              >
+              <SheetTitle className='font-bold text-sm text-slate-900 dark:text-slate-100 leading-tight'>
                 {user.name}
               </SheetTitle>
-              <SheetDescription
-                className='text-muted-foreground'
-                style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.875rem' }}
-              >
+              <SheetDescription className='text-xs text-slate-500 font-medium'>
                 {user.email}
               </SheetDescription>
             </div>
@@ -435,12 +438,11 @@ export function UserSheet({ open, onOpenChange, initialTab = 'profile', onUpgrad
                 key={value}
                 value={value}
                 className={cn(
-                  'flex flex-col items-center gap-1 py-3 rounded-none border-b-2 border-transparent',
-                  'text-muted-foreground font-medium transition-colors duration-150',
-                  'data-[state=active]:border-[var(--violet-deep)] data-[state=active]:text-[var(--violet-deep)] data-[state=active]:bg-[var(--violet-surface)]',
+                  'flex flex-col items-center gap-1.5 py-3 rounded-none border-b-2 border-transparent',
+                  'text-slate-500 text-xs font-semibold transition-colors duration-150',
+                  'data-[state=active]:border-[#2D8CFF] data-[state=active]:text-[#2D8CFF] data-[state=active]:bg-[#2D8CFF]/5',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
                 )}
-                style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.75rem' }}
                 aria-label={label}
               >
                 <Icon className='size-4' aria-hidden='true' />
@@ -452,10 +454,10 @@ export function UserSheet({ open, onOpenChange, initialTab = 'profile', onUpgrad
           {/* Scrollable tab content */}
           <div className='flex-1 overflow-y-auto'>
             <TabsContent value='profile' className='p-6 mt-0'>
-              <ProfileTab />
+              <ProfileTab user={user} />
             </TabsContent>
             <TabsContent value='account' className='p-6 mt-0'>
-              <AccountTab />
+              <AccountTab user={user} />
             </TabsContent>
             <TabsContent value='billing' className='p-6 mt-0'>
               <BillingTab onUpgrade={() => { onOpenChange(false); onUpgrade() }} />

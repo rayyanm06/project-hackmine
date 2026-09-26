@@ -32,50 +32,42 @@ export function TeamSwitcher() {
               size='lg'
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group'
             >
-              {/* Brand mark — subtle border square */}
-              <div className='flex aspect-square size-8 items-center justify-center rounded border border-sidebar-border bg-sidebar-primary text-sidebar-primary-foreground shrink-0'>
+              {/* Brand mark */}
+              <div className='flex aspect-square size-8 items-center justify-center rounded-xl border border-[#2D8CFF]/30 bg-[#2D8CFF]/10 text-[#2D8CFF] shrink-0'>
                 <UserCircle2 className='size-4' />
               </div>
               <div className='grid flex-1 text-start leading-tight'>
-                <span
-                  className='truncate font-semibold tracking-tight'
-                  style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1rem' }}
-                >
+                <span className='truncate font-bold text-sm text-slate-900 dark:text-slate-100 tracking-tight'>
                   Smart Resort 360
                 </span>
-                <span
-                  className='truncate text-muted-foreground'
-                  style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.8125rem' }}
-                >
-                  {t('role.viewAs')}: {currentRole}
+                <span className='truncate text-[11px] text-slate-500 font-medium'>
+                  {t('role.viewAs')}: <span className="text-[#2D8CFF] font-semibold">{currentRole}</span>
                 </span>
               </div>
               <ChevronsUpDown className='ms-auto size-4 opacity-50 group-data-[state=open]:opacity-100 transition-opacity' />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-md'
+            className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-2xl p-1.5 shadow-xl border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md'
             align='start'
             side={isMobile ? 'bottom' : 'right'}
             sideOffset={4}
           >
-            <DropdownMenuLabel
-              className='text-[0.75rem] tracking-widest uppercase text-muted-foreground px-2 py-1.5'
-              style={{ fontFamily: 'var(--font-cormorant)' }}
-            >
+            <DropdownMenuLabel className='text-[10px] font-bold tracking-wider uppercase text-slate-400 px-2.5 py-1.5'>
               {t('role.selectRole')}
             </DropdownMenuLabel>
             {roles.map((role) => (
               <DropdownMenuItem
                 key={role}
                 onClick={() => setRole(role)}
-                className='gap-2 p-2 cursor-pointer'
-                style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}
+                className={`gap-2.5 px-2.5 py-2 cursor-pointer rounded-xl text-xs font-semibold ${
+                  currentRole === role ? 'bg-[#2D8CFF]/10 text-[#2D8CFF]' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
               >
-                <div className='flex size-6 items-center justify-center rounded-sm border border-border'>
-                  <UserCircle2 className='size-3.5 shrink-0' />
+                <div className='flex size-6 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'>
+                  <UserCircle2 className='size-3.5 shrink-0 text-[#2D8CFF]' />
                 </div>
-                {role}
+                <span>{role}</span>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
