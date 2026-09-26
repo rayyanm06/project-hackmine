@@ -1,225 +1,200 @@
-import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
-import { Search, MapPin, Camera } from 'lucide-react'
-import { useI18n } from '@/i18n'
-import { RoomBookingSheet } from '@/components/room-booking-sheet'
-import { mockRooms, type Room } from '@/data/mock-rooms'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Search, BrainCircuit, AlertTriangle, Info, CheckCircle2, IndianRupee } from 'lucide-react'
+import { useState } from 'react'
+import { api, RoomMatchResponse, MatchedRoom } from '@/lib/api'
 
 export const Route = createFileRoute('/_layout/recommendations')({
   component: RecommendationsPage,
 })
 
-function RecommendationsPage() {
-  const { t } = useI18n()
-  const [bookingRoom, setBookingRoom]         = useState<Room | null>(null)
-  const [bookingSheetOpen, setBookingSheetOpen] = useState(false)
-
-  // Map recommendation names to mock room data for the booking flow
-  const roomByName: Record<string, Room | undefined> = {
-    'Goa Palm Retreat':    mockRooms.find(r => r.id === 'RM-105'),
-    'Munnar Valley Resort': mockRooms.find(r => r.id === 'RM-201'),
+function RoomCard({ room }: { room: MatchedRoom }) {
+  const typeColors: Record<string, string> = {
+    Suite: 'bg-purple-100 text-purple-800',
+    Deluxe: 'bg-blue-100 text-blue-800',
+    Family: 'bg-green-100 text-green-800',
+    Standard: 'bg-slate-100 text-slate-700',
   }
-
-  function openBooking(name: string) {
-    const room = roomByName[name] ?? mockRooms[0]
-    setBookingRoom(room)
-    setBookingSheetOpen(true)
-  }
-
-  const properties = [
-    {
-      name: 'Goa Palm Retreat',
-      location: 'South Goa',
-      price: '₹4,200',
-      tags: ['AC Deluxe', 'Pool', 'WiFi'],
-      dietary: 'Pure Veg',
-      reason: 'Matches your ₹5,000 max budget. Has all 2 requested amenities (Pool, WiFi) and features a certified Pure Veg kitchen.',
-    },
-    {
-      name: 'Munnar Valley Resort',
-      location: 'Kerala',
-      price: '₹3,800',
-      tags: ['Family Suite', 'WiFi'],
-      dietary: 'Jain Options',
-      reason: 'Excellent price match. Lacks a pool, but offers Jain dietary options and spacious family accommodation.',
-    },
-  ]
 
   return (
-    <div className='px-8 py-8 space-y-8 min-h-screen'>
+    <Card className="border-l-4 border-l-indigo-400">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-base">
+              Room {room.room_number}
+              <Badge className={`ml-2 text-xs font-normal ${typeColors[room.room_type] ?? 'bg-muted'}`}>
+                {room.room_type}
+              </Badge>
+            </CardTitle>
+            <CardDescription className="mt-1 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3 text-green-500" />
+              Available · Floor {room.floor ?? '—'}
+            </CardDescription>
+          </div>
+          <div className="text-right">
+            <div className="flex items-center text-xl font-bold">
+              <IndianRupee className="h-4 w-4 mt-0.5" />
+              {room.base_rate.toLocaleString()}
+            </div>
+            <div className="text-xs text-muted-foreground">per night</div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-md text-sm text-indigo-900">
+          <span className="font-semibold">Why this room: </span>
+          {room.explanation}
+        </div>
+        <div className="text-xs text-muted-foreground flex items-center gap-1">
+          <Info className="h-3 w-3" />
+          Match score: {room.match_score} · Matched on: {room.match_reason}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
-      {/* ── Page header ───────────────────────────────── */}
+function RecommendationsPage() {
+  const [query, setQuery] = useState('')
+  const [result, setResult] = useState<RoomMatchResponse | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSearch = async () => {
+    if (!query.trim()) return
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    try {
+      const data = await api.getRoomRecommendation(query.trim())
+      setResult(data)
+    } catch (err: any) {
+      setError(err.message || 'Failed to get recommendations')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch()
+  }
+
+  return (
+    <div className="p-6 space-y-6 bg-muted/20 min-h-screen">
       <div>
-        <h1 className='text-[2rem] font-semibold tracking-tight leading-tight'>{t('recommendations.title')}</h1>
-        <p className='mt-1 text-muted-foreground' style={{ fontSize: '0.9375rem' }}>
-          {t('recommendations.subtitle')}
+        <h1 className="text-3xl font-bold tracking-tight">Room Matchmaker</h1>
+        <p className="text-muted-foreground flex items-center gap-1 mt-1">
+          <BrainCircuit className="h-4 w-4 text-indigo-500" />
+          Describe what you need — we'll find the best available room at Smart Resort 360.
         </p>
       </div>
 
-      {/* Stack on mobile, side-by-side on md+ */}
-      <div className='grid gap-6 md:grid-cols-12'>
+      {/* Search Input */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Describe Your Stay</CardTitle>
+          <CardDescription>
+            Type a natural-language request. Only room type and price are matched from live data.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2">
+            <Input
+              id="room-query-input"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="e.g. I need a family room for 4 people under ₹6000 a night"
+              className="flex-1"
+            />
+            <Button id="find-room-btn" onClick={handleSearch} disabled={loading || !query.trim()}>
+              <Search className="h-4 w-4 mr-2" />
+              {loading ? 'Searching…' : 'Find My Room'}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Info className="h-3 w-3" />
+            Only <strong>room type</strong> and <strong>price/night</strong> are verified from live database.
+            Amenities (pool, WiFi, etc.) are not in the current room data.
+          </p>
+        </CardContent>
+      </Card>
 
-        {/* Search form — full width on mobile, 4/12 on md+ */}
-        <div className='md:col-span-4 space-y-4'>
-          <Card>
-            <CardHeader>
-              <CardTitle className='text-[1.0625rem]'>{t('recommendations.formTitle')}</CardTitle>
-              <CardDescription>{t('recommendations.formDesc')}</CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='space-y-1.5'>
-                <label htmlFor='rec-nlp' className='text-[0.9375rem] font-medium'>
-                  {t('recommendations.naturalLanguage')}
-                </label>
-                <Textarea
-                  id='rec-nlp'
-                  placeholder={t('recommendations.naturalPlaceholder')}
-                  className='min-h-[110px] rounded-sm text-[0.9375rem] resize-none'
-                />
-              </div>
-
-              <div className='relative flex items-center py-1'>
-                <div className='flex-grow border-t border-border' aria-hidden='true' />
-                <span className='flex-shrink-0 mx-4 text-[0.75rem] font-semibold tracking-widest uppercase text-muted-foreground'>
-                  {t('recommendations.orUseFilters')}
-                </span>
-                <div className='flex-grow border-t border-border' aria-hidden='true' />
-              </div>
-
-              <div className='space-y-3'>
-                <div className='grid grid-cols-2 gap-2'>
-                  <div className='space-y-1.5'>
-                    <label htmlFor='rec-checkin' className='text-[0.875rem] font-medium'>
-                      {t('recommendations.checkin')}
-                    </label>
-                    <Input id='rec-checkin' type='date' className='text-[0.875rem]' />
-                  </div>
-                  <div className='space-y-1.5'>
-                    <label htmlFor='rec-checkout' className='text-[0.875rem] font-medium'>
-                      {t('recommendations.checkout')}
-                    </label>
-                    <Input id='rec-checkout' type='date' className='text-[0.875rem]' />
-                  </div>
-                </div>
-                <div className='space-y-1.5'>
-                  <label htmlFor='rec-budget' className='text-[0.875rem] font-medium'>
-                    {t('recommendations.budget')}
-                  </label>
-                  <Input id='rec-budget' type='number' placeholder='5000' />
-                </div>
-                <div className='space-y-1.5'>
-                  <label htmlFor='rec-dietary' className='text-[0.875rem] font-medium'>
-                    {t('recommendations.dietary')}
-                  </label>
-                  <Input id='rec-dietary' type='text' placeholder={t('recommendations.dietaryPlaceholder')} />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className='border-t pt-4'>
-              <Button className='w-full' aria-label={t('action.findMatches')}>
-                <Search className='size-4' aria-hidden='true' /> {t('action.findMatches')}
-              </Button>
-            </CardFooter>
-          </Card>
+      {/* Loading State */}
+      {loading && (
+        <div className="space-y-4">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
         </div>
+      )}
 
-        {/* Results — full width on mobile, 8/12 on md+ */}
-        <div className='md:col-span-8 space-y-5'>
-          <h2 className='text-[1.375rem] font-semibold tracking-tight'>{t('recommendations.resultsTitle')}</h2>
-
-          {properties.map((property) => (
-            <Card key={property.name} className='overflow-hidden'>
-              <CardContent className='p-0'>
-                {/* Mobile: stacked. sm+: side-by-side */}
-                <div className='flex flex-col sm:flex-row'>
-                  {/* Thumbnail */}
-                  <div className='sm:w-1/3 bg-muted border-b sm:border-b-0 sm:border-r border-border flex items-center justify-center min-h-[140px] aspect-video sm:aspect-auto'>
-                    <Camera className='size-8 text-muted-foreground/30' aria-hidden='true' />
-                  </div>
-
-                  {/* Content */}
-                  <div className='sm:w-2/3 p-5 sm:p-6 flex flex-col justify-between gap-4'>
-                    <div>
-                      {/* Name + price row — stack on very small, inline on sm+ */}
-                      <div className='flex flex-col xs:flex-row xs:justify-between xs:items-start gap-2'>
-                        <div>
-                          <h3 className='text-[1.1875rem] font-semibold tracking-tight'>{property.name}</h3>
-                          <div className='flex items-center gap-1 text-muted-foreground mt-0.5' style={{ fontSize: '0.875rem' }}>
-                            <MapPin className='size-3.5' aria-hidden='true' /> {property.location}
-                          </div>
-                        </div>
-                        <div className='shrink-0'>
-                          <div className='text-[1.375rem] font-semibold tracking-tight'>{property.price}</div>
-                          <div className='text-muted-foreground' style={{ fontSize: '0.8125rem' }}>
-                            {t('recommendations.perNight')}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className='mt-3 flex flex-wrap gap-1.5'>
-                        {property.tags.map(tag => (
-                          <Badge key={tag} variant='secondary' className='text-[0.8125rem]'>{tag}</Badge>
-                        ))}
-                        <Badge
-                          variant='outline'
-                          style={{
-                            background: 'var(--status-success)',
-                            color: 'var(--status-success-fg)',
-                            borderColor: 'var(--status-success-border)',
-                          }}
-                          className='text-[0.8125rem]'
-                        >
-                          {property.dietary}
-                        </Badge>
-                      </div>
-
-                      <div
-                        className='mt-4 p-3 rounded-sm border'
-                        style={{
-                          background: 'var(--ai-surface)',
-                          borderColor: 'var(--ai-surface-border)',
-                          color: 'var(--ai-surface-fg)',
-                        }}
-                      >
-                        <span className='font-semibold' style={{ fontSize: '0.875rem' }}>
-                          {t('recommendations.whyRecommended')}:{' '}
-                        </span>
-                        <span style={{ fontSize: '0.875rem', lineHeight: '1.6' }}>{property.reason}</span>
-                      </div>
-                    </div>
-
-                    <div className='flex justify-end gap-2 flex-wrap'>
-                      <Button variant='outline' size='sm' aria-label={`${t('action.view360')} — ${property.name}`}>
-                        <Camera className='size-4' aria-hidden='true' /> {t('action.view360')}
-                      </Button>
-                      <Button
-                        size='sm'
-                        aria-label={`${t('action.book')} — ${property.name}`}
-                        onClick={() => openBooking(property.name)}
-                        style={{ background: 'var(--violet-deep)', color: 'oklch(1 0 0)' }}
-                      >
-                        {t('action.book')}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Error State */}
+      {error && (
+        <div className="flex items-center gap-2 p-4 bg-red-50 text-red-900 border border-red-200 rounded-md">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <span>{error}</span>
         </div>
-      </div>
+      )}
 
-      {/* Booking sheet */}
-      <RoomBookingSheet
-        room={bookingRoom}
-        open={bookingSheetOpen}
-        onOpenChange={setBookingSheetOpen}
-      />
+      {/* Results */}
+      {result && !loading && (
+        <div className="space-y-4">
+          {/* Parsed requirements summary */}
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Matched on:</span>
+            {result.parsed_requirements.room_type && (
+              <Badge variant="outline">Type: {result.parsed_requirements.room_type}</Badge>
+            )}
+            {result.parsed_requirements.max_price && (
+              <Badge variant="outline">Max: ₹{result.parsed_requirements.max_price.toLocaleString()}</Badge>
+            )}
+            {result.parsed_requirements.unsupported_requirements.length > 0 && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                ⚠ Unverified: {result.parsed_requirements.unsupported_requirements.join(', ')}
+              </Badge>
+            )}
+            <Badge variant="secondary" className="ml-auto capitalize text-xs">
+              {result.source.replace('_', ' ')}
+            </Badge>
+          </div>
+
+          {/* Warning */}
+          {result.warning && (
+            <div className="flex items-start gap-2 p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded-md text-sm">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{result.warning}</span>
+            </div>
+          )}
+
+          {/* Room cards */}
+          {result.matches.length > 0 ? (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold">
+                {result.matches.length} Room{result.matches.length > 1 ? 's' : ''} Found
+              </h2>
+              {result.matches.map(room => (
+                <RoomCard key={room.room_number} room={room} />
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-muted-foreground border rounded-md bg-muted/30">
+              No available rooms match your request. Try adjusting your requirements.
+            </div>
+          )}
+
+          {/* Data label */}
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Info className="h-3 w-3" />
+            <strong>LIVE DATA:</strong> Room availability and rates are from the current database.
+            No booking functionality is available in this demo.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

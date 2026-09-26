@@ -10,6 +10,8 @@ import {
   BrainCircuit,
   History,
   Settings,
+  Hotel,
+  Gauge,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -22,7 +24,7 @@ export const sidebarData: SidebarData = {
   teams: [
     {
       name: 'Smart Resort 360',
-      logo: LayoutDashboard,
+      logo: Hotel,
       plan: 'Manager View',
     },
   ],
@@ -32,6 +34,7 @@ export const sidebarData: SidebarData = {
       titleKey: 'nav.group.general',
       items: [
         { title: 'Dashboard',  titleKey: 'nav.dashboard',  url: '/',               icon: LayoutDashboard },
+        { title: 'Resort 360',                             url: '/resort-360',     icon: Gauge },
       ],
     },
     {
@@ -56,9 +59,10 @@ export const sidebarData: SidebarData = {
       title: 'Revenue & AI',
       titleKey: 'nav.group.revenueAI',
       items: [
-        { title: 'Pricing Intelligence', titleKey: 'nav.pricing',   url: '/pricing',  icon: LineChart },
-        { title: 'AI Insights',          titleKey: 'nav.insights',  url: '/insights', icon: BrainCircuit },
-        { title: 'Audit Trail',          titleKey: 'nav.audit',     url: '/audit',    icon: History },
+        { title: 'Pricing Intelligence', titleKey: 'nav.pricing',   url: '/pricing',           icon: LineChart },
+        { title: 'Cancellation Risk',                               url: '/cancellation-risk', icon: BrainCircuit },
+        { title: 'AI Insights',          titleKey: 'nav.insights',  url: '/insights',          icon: BrainCircuit },
+        { title: 'Audit Trail',          titleKey: 'nav.audit',     url: '/audit',             icon: History },
       ],
     },
     {

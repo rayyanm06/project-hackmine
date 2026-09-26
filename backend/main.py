@@ -1,210 +1,95 @@
-import uuid
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from fastapi.staticfiles import StaticFiles
+import os
+from backend.database import engine, Base
+from backend.routes import health, complaints, tasks
+from backend.routes import staff, stats, rooms, intelligence, pricing, recommendations, audit, reports, ml
 
-from database import engine, get_db, Base
-from models import Complaint, Staff, Task, AuditLog
-from schemas import (
-    ComplaintCreate, ComplaintResponse,
-    StaffResponse, StaffAvailabilityUpdate,
-    TaskCreate, TaskStatusUpdate, TaskResponse,
-    AuditLogResponse
-)
-from services.classifier import classify_complaint_text
-from services.assignment import calculate_assignment
-from seed import seed_database
-
-# Create DB tables and seed initial data
+# Create all tables on startup (including new rooms table)
 Base.metadata.create_all(bind=engine)
-seed_database()
 
-app = FastAPI(
-    title="Smart Resort 360 API",
-    description="AI-Powered Resort Operations, Guest Experience & Revenue Intelligence Platform",
-    version="1.0.0"
-)
+app = FastAPI(title="Smart Resort 360 API")
 
-# CORS setup
+# Allow Vite dev server
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/")
-def root():
-    return {
-        "app": "Smart Resort 360 Backend",
-        "status": "online",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
+# ── Day 2 routes (unchanged) ─────────────────────────────────────────────────
+app.include_router(health.router)
+app.include_router(complaints.router)
+app.include_router(tasks.router)
 
-@app.get("/health")
-def health():
-    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+# ── Day 3 routes (new) ───────────────────────────────────────────────────────
+app.include_router(staff.router)
+app.include_router(stats.router)
+app.include_router(rooms.router)
+app.include_router(intelligence.router)
+app.include_router(pricing.router)
+app.include_router(recommendations.router)
+app.include_router(audit.router)
+app.include_router(reports.router)
+app.include_router(ml.router)
 
-# --- Complaints Endpoints ---
-@app.get("/api/complaints", response_model=List[ComplaintResponse])
-def get_complaints(db: Session = Depends(get_db)):
-    return db.query(Complaint).order_by(Complaint.created_at.desc()).all()
+# ── Static file serving for completion proof images ──────────────────────────
+os.makedirs("uploads/proofs", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-@app.post("/api/complaints", response_model=ComplaintResponse)
-def create_complaint(payload: ComplaintCreate, db: Session = Depends(get_db)):
-    complaint_id = f"CMP-{datetime.now().strftime('%Y')}-{uuid.uuid4().hex[:4].upper()}"
-    
-    # Run classification
-    classification = classify_complaint_text(payload.text, payload.language or "English")
 
-    complaint = Complaint(
-        id=complaint_id,
-        guest_name=payload.guest_name or "Guest",
-        room_number=payload.room_number or "N/A",
-        text=payload.text,
-        language=payload.language or "English",
-        category=classification["category"],
-        subcategory=classification["subcategory"],
-        priority=classification["priority"],
-        status="open",
-        sentiment=classification["sentiment"],
-        confidence=classification["confidence"],
-        explanation=classification["explanation"],
-        created_at=datetime.now(timezone.utc)
-    )
-    db.add(complaint)
-
-    # Auto-generate task and assign staff
-    all_staff = db.query(Staff).all()
-    assigned_staff, score = calculate_assignment(classification["required_skill"], classification["priority"], all_staff)
-
-    task_id = f"TSK-{uuid.uuid4().hex[:4].upper()}"
-    task = Task(
-        id=task_id,
-        complaint_id=complaint_id,
-        title=f"{classification['subcategory']} in Room {payload.room_number or 'N/A'}",
-        assigned_to=assigned_staff.name if assigned_staff else None,
-        skill=classification["required_skill"],
-        priority=classification["priority"],
-        status="Assigned" if assigned_staff else "Created",
-        sla_status="on_track",
-        created_at=datetime.now(timezone.utc),
-        due_at=datetime.now(timezone.utc) + timedelta(minutes=60),
-        assignment_score=score if assigned_staff else None
-    )
-    if assigned_staff:
-        complaint.assigned_to = assigned_staff.name
-        complaint.status = "in_progress"
-        assigned_staff.active_tasks = (assigned_staff.active_tasks or 0) + 1
-        assigned_staff.current_workload = min(100, (assigned_staff.current_workload or 0) + 15)
-
-    db.add(task)
-
-    # Audit log
-    audit = AuditLog(
-        action="Complaint Intake & Auto-Assignment",
-        user=payload.guest_name or "Guest",
-        details=f"Complaint {complaint_id} logged. Classified as {classification['category']}/{classification['subcategory']} ({classification['priority']}). Auto-assigned to {assigned_staff.name if assigned_staff else 'Unassigned'} with score {score}."
-    )
-    db.add(audit)
-    db.commit()
-    db.refresh(complaint)
-    return complaint
-
-# --- Staff Endpoints ---
-@app.get("/api/staff", response_model=List[StaffResponse])
-def get_staff(db: Session = Depends(get_db)):
-    return db.query(Staff).all()
-
-@app.patch("/api/staff/{staff_id}/availability", response_model=StaffResponse)
-def update_staff_availability(staff_id: str, payload: StaffAvailabilityUpdate, db: Session = Depends(get_db)):
-    staff = db.query(Staff).filter(Staff.id == staff_id).first()
-    if not staff:
-        raise HTTPException(status_code=404, detail="Staff not found")
-    staff.availability = payload.availability
-    db.commit()
-    db.refresh(staff)
-    return staff
-
-# --- Tasks Endpoints ---
-@app.get("/api/tasks", response_model=List[TaskResponse])
-def get_tasks(db: Session = Depends(get_db)):
-    return db.query(Task).order_by(Task.created_at.desc()).all()
-
-@app.patch("/api/tasks/{task_id}/status", response_model=TaskResponse)
-def update_task_status(task_id: str, payload: TaskStatusUpdate, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    task.status = payload.status
-    if payload.completion_notes:
-        task.completion_notes = payload.completion_notes
-
-    if payload.status == "Completed":
-        # Free up staff workload
-        if task.assigned_to:
-            staff = db.query(Staff).filter(Staff.name == task.assigned_to).first()
-            if staff:
-                staff.active_tasks = max(0, (staff.active_tasks or 1) - 1)
-                staff.completed_tasks = (staff.completed_tasks or 0) + 1
-                staff.current_workload = max(0, (staff.current_workload or 15) - 15)
-
-    audit = AuditLog(
-        action=f"Task Status Changed to {payload.status}",
-        user=task.assigned_to or "Staff",
-        details=f"Task {task.id} updated to status '{payload.status}'. Notes: {payload.completion_notes or 'None'}"
-    )
-    db.add(audit)
-    db.commit()
-    db.refresh(task)
-    return task
-
-@app.post("/api/tasks/{task_id}/proof", response_model=TaskResponse)
-def upload_proof(task_id: str, photo: UploadFile = File(...), notes: Optional[str] = Form(None), db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    task.proof_photo = photo.filename
-    task.status = "Completed"
-    if notes:
-        task.completion_notes = notes
-
-    audit = AuditLog(
-        action="Completion Proof Uploaded",
-        user=task.assigned_to or "Staff",
-        details=f"Photo proof '{photo.filename}' submitted for Task {task.id}. Status set to Completed."
-    )
-    db.add(audit)
-    db.commit()
-    db.refresh(task)
-    return task
-
-# --- Audit Logs Endpoint ---
-@app.get("/api/audit-logs", response_model=List[AuditLogResponse])
-def get_audit_logs(db: Session = Depends(get_db)):
-    return db.query(AuditLog).order_by(AuditLog.created_at.desc()).all()
-
-# --- Intelligence & Pricing Endpoint ---
-@app.get("/api/pricing")
-def get_pricing_intelligence():
-    return {
-        "current_revpar": 4200,
-        "market_revpar": 3950,
-        "occupancy_rate": 84.5,
-        "recommendation": "Increase weekend Deluxe Suite pricing by 12% due to high festival demand.",
-        "competitors": [
-            {"name": "Seaside Haven Resort", "rate": 5400, "occupancy": 88},
-            {"name": "Palm Grove Heritage", "rate": 4100, "occupancy": 76},
-            {"name": "Whispering Pines Retreat", "rate": 6200, "occupancy": 91}
+# ── Seed demo room data at startup if none exists ────────────────────────────
+def seed_rooms():
+    """
+    Seed demonstration room data.
+    NOTE: This is DEMO DATA — not a live PMS/booking system.
+    Room statuses are static seeds for the Resort 360 manager view.
+    """
+    from backend.database import SessionLocal
+    from backend.models.room import Room
+    db = SessionLocal()
+    try:
+        if db.query(Room).first():
+            return  # Already seeded
+        demo_rooms = [
+            Room(room_number=101, room_type="Deluxe",   floor=1, status="occupied", base_rate=3500),
+            Room(room_number=102, room_type="Deluxe",   floor=1, status="available", base_rate=3500),
+            Room(room_number=103, room_type="Deluxe",   floor=1, status="cleaning", base_rate=3500),
+            Room(room_number=104, room_type="Standard", floor=1, status="occupied", base_rate=2500),
+            Room(room_number=105, room_type="Standard", floor=1, status="available", base_rate=2500),
+            Room(room_number=201, room_type="Suite",    floor=2, status="occupied", base_rate=8500),
+            Room(room_number=202, room_type="Suite",    floor=2, status="occupied", base_rate=8500),
+            Room(room_number=203, room_type="Deluxe",   floor=2, status="maintenance", base_rate=3500),
+            Room(room_number=204, room_type="Deluxe",   floor=2, status="occupied", base_rate=3500),
+            Room(room_number=205, room_type="Deluxe",   floor=2, status="available", base_rate=3500),
+            Room(room_number=301, room_type="Family",   floor=3, status="available", base_rate=5500),
+            Room(room_number=302, room_type="Family",   floor=3, status="cleaning", base_rate=5500),
+            Room(room_number=303, room_type="Deluxe",   floor=3, status="available", base_rate=3500),
+            Room(room_number=304, room_type="Standard", floor=3, status="occupied", base_rate=2500),
+            Room(room_number=305, room_type="Standard", floor=3, status="maintenance", base_rate=2500),
+            Room(room_number=401, room_type="Suite",    floor=4, status="occupied", base_rate=8500),
+            Room(room_number=402, room_type="Suite",    floor=4, status="available", base_rate=8500),
+            Room(room_number=403, room_type="Deluxe",   floor=4, status="occupied", base_rate=3500),
+            Room(room_number=404, room_type="Deluxe",   floor=4, status="cleaning", base_rate=3500),
+            Room(room_number=405, room_type="Standard", floor=4, status="available", base_rate=2500),
         ]
-    }
+        db.add_all(demo_rooms)
+        db.commit()
+        print(f"[startup] Seeded {len(demo_rooms)} demo rooms.")
+    finally:
+        db.close()
+
+
+seed_rooms()
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

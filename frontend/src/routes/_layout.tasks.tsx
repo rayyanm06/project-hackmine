@@ -1,297 +1,352 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { mockTasks, type TaskStatus } from '@/data/mock-tasks'
-import { Filter, UserCircle2, X } from 'lucide-react'
-import { useI18n } from '@/i18n'
+import { Filter, UserCircle2 } from 'lucide-react'
+import { api, type TaskResponse } from '@/lib/api'
 
 export const Route = createFileRoute('/_layout/tasks')({
   component: TasksPage,
 })
 
-function statusStyle(status: TaskStatus): React.CSSProperties {
-  switch (status) {
-    case 'Created':     return { background: 'var(--status-neutral)',  color: 'var(--status-neutral-fg)',   borderColor: 'var(--status-neutral-border)' }
-    case 'Assigned':    return { background: 'var(--status-progress)', color: 'var(--status-progress-fg)',  borderColor: 'var(--status-progress-border)' }
-    case 'In Progress': return { background: 'var(--status-open)',     color: 'var(--status-open-fg)',      borderColor: 'var(--status-open-border)' }
-    case 'Completed':   return { background: 'var(--status-success)',  color: 'var(--status-success-fg)',   borderColor: 'var(--status-success-border)' }
-    case 'Verified':    return { background: 'var(--status-success)',  color: 'var(--status-success-fg)',   borderColor: 'var(--status-success-border)' }
-    case 'Closed':      return { background: 'var(--status-neutral)',  color: 'var(--status-neutral-fg)',   borderColor: 'var(--status-neutral-border)' }
-    default:            return { background: 'var(--status-neutral)',  color: 'var(--status-neutral-fg)',   borderColor: 'var(--status-neutral-border)' }
+// ── Types matching original mock-tasks shape ─────────────────────────────────
+type TaskStatus = 'Created' | 'Assigned' | 'In Progress' | 'Completed' | 'Verified' | 'Closed'
+
+interface Task {
+  id: string
+  complaintId?: string
+  title: string
+  assignedTo: string
+  skill: string
+  priority: string
+  status: TaskStatus
+  createdAt: string
+  dueAt: string
+  slaStatus: string
+  assignmentScore?: number
+  completionNotes?: string
+  completionProofPath?: string
+  _rawId: number
+}
+
+// ── Map API response to UI Task shape ────────────────────────────────────────
+function mapApiToTask(tData: TaskResponse): Task {
+  const latestAssignment =
+    tData.assignments && tData.assignments.length > 0
+      ? tData.assignments[tData.assignments.length - 1]
+      : null
+
+  const statusMap: Record<string, TaskStatus> = {
+    created:     'Created',
+    assigned:    'Assigned',
+    in_progress: 'In Progress',
+    completed:   'Completed',
+    verified:    'Verified',
+    closed:      'Closed',
+  }
+
+  return {
+    id:              `TSK-${tData.id}`,
+    complaintId:     `CMP-${tData.complaint_id}`,
+    title:           tData.issue_type
+                       ? `${tData.issue_type} - ${tData.location ?? 'N/A'}`
+                       : `Issue in ${tData.location ?? 'N/A'}`,
+    assignedTo:      latestAssignment?.staff_name ?? 'Unassigned',
+    skill:           tData.department ?? 'N/A',
+    priority:        tData.priority?.toLowerCase() ?? 'medium',
+    status:          statusMap[tData.status] ?? 'Created',
+    createdAt:       tData.created_at,
+    dueAt:           new Date(new Date(tData.created_at).getTime() + 60 * 60 * 1000).toISOString(),
+    slaStatus:       'on_track',
+    assignmentScore: latestAssignment?.score != null ? Math.round(latestAssignment.score) : undefined,
+    completionNotes: tData.completion_proofs && tData.completion_proofs.length > 0
+                       ? 'Completion proof provided.'
+                       : undefined,
+    completionProofPath: tData.completion_proofs && tData.completion_proofs.length > 0
+                           ? tData.completion_proofs[tData.completion_proofs.length - 1].photo_path
+                           : undefined,
+    _rawId:          tData.id,
   }
 }
 
-function priorityStyle(priority: string): React.CSSProperties {
-  switch (priority) {
-    case 'critical': return { background: 'var(--status-critical)', color: 'var(--status-critical-fg)', borderColor: 'var(--status-critical-border)' }
-    case 'high':     return { background: 'var(--status-open)',     color: 'var(--status-open-fg)',     borderColor: 'var(--status-open-border)' }
-    case 'medium':   return { background: 'var(--status-progress)', color: 'var(--status-progress-fg)', borderColor: 'var(--status-progress-border)' }
-    case 'low':      return { background: 'var(--status-neutral)',  color: 'var(--status-neutral-fg)',  borderColor: 'var(--status-neutral-border)' }
-    default:         return { background: 'var(--status-neutral)',  color: 'var(--status-neutral-fg)',  borderColor: 'var(--status-neutral-border)' }
+// ── Color helpers (original style) ───────────────────────────────────────────
+function getPriorityColor(p: string): string {
+  switch (p) {
+    case 'critical': return 'bg-red-100 text-red-800'
+    case 'high':     return 'bg-orange-100 text-orange-800'
+    case 'medium':   return 'bg-blue-100 text-blue-800'
+    case 'low':      return 'bg-slate-100 text-slate-800'
+    default:         return 'bg-slate-100 text-slate-800'
   }
 }
 
-function SLAIndicator({ sla, t }: { sla: string; t: (k: any) => string }) {
-  const configs: Record<string, { color: string; key: string }> = {
-    on_track: { color: 'var(--status-success-fg)',  key: 'status.onTrack' },
-    at_risk:  { color: 'var(--status-open-fg)',     key: 'status.atRisk' },
-    breached: { color: 'var(--status-critical-fg)', key: 'status.breached' },
+function getStatusBadge(s: TaskStatus): string {
+  switch (s) {
+    case 'Created':     return 'bg-slate-100 text-slate-800'
+    case 'Assigned':    return 'bg-blue-100 text-blue-800'
+    case 'In Progress': return 'bg-yellow-100 text-yellow-800'
+    case 'Completed':   return 'bg-purple-100 text-purple-800'
+    case 'Verified':    return 'bg-green-100 text-green-800'
+    case 'Closed':      return 'bg-slate-100 text-slate-800'
+    default:            return 'bg-slate-100 text-slate-800'
   }
-  const cfg = configs[sla]
-  if (!cfg) return null
-  return (
-    <span className='flex items-center gap-1.5' style={{ fontSize: '0.875rem', color: cfg.color }}>
-      <span className='size-2 rounded-full shrink-0' style={{ background: cfg.color }} aria-hidden='true' />
-      {t(cfg.key)}
-    </span>
-  )
 }
 
-const ALL_STATUSES: TaskStatus[] = ['Created', 'Assigned', 'In Progress', 'Completed', 'Verified', 'Closed']
-const ALL_PRIORITIES = ['low', 'medium', 'high', 'critical']
-const ALL_SLA = ['on_track', 'at_risk', 'breached']
+function getSLAIndicator(sla: string): React.ReactElement | null {
+  switch (sla) {
+    case 'on_track':
+      return <span className="flex items-center text-green-600 text-xs"><div className="h-2 w-2 rounded-full bg-green-500 mr-1" /> On Track</span>
+    case 'at_risk':
+      return <span className="flex items-center text-orange-600 text-xs"><div className="h-2 w-2 rounded-full bg-orange-500 mr-1" /> At Risk</span>
+    case 'breached':
+      return <span className="flex items-center text-red-600 text-xs"><div className="h-2 w-2 rounded-full bg-red-500 mr-1" /> Breached</span>
+    default:
+      return null
+  }
+}
 
+// ── Page component ───────────────────────────────────────────────────────────
 function TasksPage() {
-  const { t } = useI18n()
-  const [filterStatus,   setFilterStatus]   = useState<TaskStatus | 'all'>('all')
-  const [filterPriority, setFilterPriority] = useState<string>('all')
-  const [filterSLA,      setFilterSLA]      = useState<string>('all')
+  const [tasks,   setTasks]   = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState<string | null>(null)
 
-  const filtered = mockTasks.filter(task => {
-    if (filterStatus   !== 'all' && task.status    !== filterStatus)   return false
-    if (filterPriority !== 'all' && task.priority  !== filterPriority) return false
-    if (filterSLA      !== 'all' && task.slaStatus !== filterSLA)      return false
-    return true
-  })
-
-  const hasActive = filterStatus !== 'all' || filterPriority !== 'all' || filterSLA !== 'all'
-
-  const clearAll = () => {
-    setFilterStatus('all')
-    setFilterPriority('all')
-    setFilterSLA('all')
-  }
-
-  const statusLabel = (s: TaskStatus) => {
-    const map: Record<TaskStatus, string> = {
-      'Created': t('status.created'), 'Assigned': t('status.assigned'),
-      'In Progress': t('status.inProgress'), 'Completed': t('status.completed'),
-      'Verified': t('status.verified'), 'Closed': t('status.closed'),
+  const loadTasks = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await api.getTasks()
+      setTasks(data.map(mapApiToTask).reverse())
+      setError(null)
+    } catch (err: any) {
+      setError(err.message || 'Failed to load tasks')
+    } finally {
+      setLoading(false)
     }
-    return map[s] ?? s
-  }
+  }, [])
+
+  useEffect(() => {
+    loadTasks()
+  }, [loadTasks])
 
   return (
-    <div className='px-8 py-8 space-y-8 min-h-screen'>
-
-      {/* ── Page header ───────────────────────────────── */}
+    <div className="p-6 space-y-6 min-h-screen">
       <div>
-        <h1 className='text-[2rem] font-semibold tracking-tight leading-tight'>{t('tasks.title')}</h1>
-        <p className='mt-1 text-muted-foreground' style={{ fontSize: '0.9375rem' }}>{t('tasks.subtitle')}</p>
+        <h1 className="text-3xl font-bold tracking-tight">Operational Tasks</h1>
+        <p className="text-muted-foreground">Task queue with AI-powered assignment and SLAs.</p>
       </div>
 
       <Card>
-        <CardHeader className='flex flex-row items-start justify-between gap-4 flex-wrap pb-3'>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div>
-            <CardTitle className='text-[1.0625rem]'>{t('tasks.queueTitle')}</CardTitle>
-            <CardDescription>{t('tasks.queueDesc')}</CardDescription>
+            <CardTitle>Task Queue</CardTitle>
+            <CardDescription>Live operations</CardDescription>
           </div>
-
-          {/* Live filter controls */}
-          <div className='flex items-center gap-2 flex-wrap'>
-            <Filter className='size-4 text-muted-foreground/60' aria-hidden='true' />
-
-            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as TaskStatus | 'all')}>
-              <SelectTrigger className='h-8 rounded-sm text-sm w-auto' aria-label={t('tasks.filterByStatus')}>
-                <SelectValue placeholder={t('label.status')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='all' style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}>{t('label.all')}</SelectItem>
-                {ALL_STATUSES.map(s => (
-                  <SelectItem key={s} value={s} style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}>{statusLabel(s)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger className='h-8 rounded-sm text-sm w-auto' aria-label={t('tasks.filterByPriority')}>
-                <SelectValue placeholder={t('label.priority')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='all' style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}>{t('label.all')}</SelectItem>
-                {ALL_PRIORITIES.map(p => (
-                  <SelectItem key={p} value={p} style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}>
-                    {t(`priority.${p}` as Parameters<typeof t>[0])}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterSLA} onValueChange={setFilterSLA}>
-              <SelectTrigger className='h-8 rounded-sm text-sm w-auto' aria-label={t('tasks.filterBySLA')}>
-                <SelectValue placeholder={t('label.sla')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='all' style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}>{t('label.all')}</SelectItem>
-                {ALL_SLA.map(s => (
-                  <SelectItem key={s} value={s} style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}>
-                    {t(`status.${s === 'on_track' ? 'onTrack' : s === 'at_risk' ? 'atRisk' : 'breached'}` as Parameters<typeof t>[0])}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {hasActive && (
-              <Button variant='ghost' size='sm' className='h-8 px-2' onClick={clearAll} aria-label={t('action.clearFilters')}>
-                <X className='size-3.5' />
-                <span className='sr-only'>{t('action.clearFilters')}</span>
-              </Button>
-            )}
-          </div>
+          <Button variant="outline" size="sm" onClick={loadTasks} disabled={loading}>
+            <Filter className="w-4 h-4 mr-2" />
+            {loading ? 'Loading…' : 'Refresh'}
+          </Button>
         </CardHeader>
-
         <CardContent>
-          {/* Active filter chips */}
-          {hasActive && (
-            <div className='flex gap-2 mb-3 flex-wrap'>
-              {filterStatus !== 'all' && (
-                <Badge variant='outline' className='gap-1 text-[0.8125rem]'
-                  style={{ background: 'var(--violet-surface)', color: 'var(--violet-deep)', borderColor: 'var(--violet-border)' }}>
-                  {t('label.status')}: {statusLabel(filterStatus as TaskStatus)}
-                  <button onClick={() => setFilterStatus('all')} className='ml-0.5 hover:opacity-70' aria-label='Remove status filter'><X className='size-3' /></button>
-                </Badge>
-              )}
-              {filterPriority !== 'all' && (
-                <Badge variant='outline' className='gap-1 text-[0.8125rem]'
-                  style={{ background: 'var(--violet-surface)', color: 'var(--violet-deep)', borderColor: 'var(--violet-border)' }}>
-                  {t('label.priority')}: {t(`priority.${filterPriority}` as Parameters<typeof t>[0])}
-                  <button onClick={() => setFilterPriority('all')} className='ml-0.5 hover:opacity-70' aria-label='Remove priority filter'><X className='size-3' /></button>
-                </Badge>
-              )}
-              {filterSLA !== 'all' && (
-                <Badge variant='outline' className='gap-1 text-[0.8125rem]'
-                  style={{ background: 'var(--violet-surface)', color: 'var(--violet-deep)', borderColor: 'var(--violet-border)' }}>
-                  SLA: {t(`status.${filterSLA === 'on_track' ? 'onTrack' : filterSLA === 'at_risk' ? 'atRisk' : 'breached'}` as Parameters<typeof t>[0])}
-                  <button onClick={() => setFilterSLA('all')} className='ml-0.5 hover:opacity-70' aria-label='Remove SLA filter'><X className='size-3' /></button>
-                </Badge>
-              )}
+          {error && (
+            <div className="text-red-600 text-sm mb-3">
+              {error}{' '}
+              <button onClick={loadTasks} className="underline">Retry</button>
             </div>
           )}
-
-          <div className='rounded-sm border overflow-x-auto'>
-            <table className='w-full' style={{ fontSize: '0.9375rem' }}>
+          <div className="rounded-md border overflow-x-auto">
+            <table className="w-full text-sm">
               <thead>
-                <tr className='border-b bg-muted/40'>
-                  {[t('label.taskId'), 'Title / Complaint', t('label.assignedTo'), t('label.priority'), t('label.status'), t('label.sla'), t('label.actions')].map(h => (
-                    <th key={h} className='px-4 py-2.5 text-left text-[0.75rem] font-semibold tracking-widest uppercase text-muted-foreground whitespace-nowrap'>
-                      {h}
-                    </th>
-                  ))}
+                <tr className="border-b bg-muted/50">
+                  <th className="p-3 text-left font-medium">Task ID</th>
+                  <th className="p-3 text-left font-medium">Title / Complaint</th>
+                  <th className="p-3 text-left font-medium">Assigned To</th>
+                  <th className="p-3 text-left font-medium">Priority</th>
+                  <th className="p-3 text-left font-medium">Status</th>
+                  <th className="p-3 text-left font-medium">SLA</th>
+                  <th className="p-3 text-left font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={7} className='px-4 py-10 text-center text-muted-foreground' style={{ fontSize: '0.9375rem' }}>
-                      <p>{t('empty.noResults')}</p>
-                      <button onClick={clearAll} className='mt-1 underline underline-offset-2 text-foreground hover:opacity-70 transition-opacity' style={{ fontSize: '0.875rem' }}>
-                        {t('empty.clearFilters')}
-                      </button>
+                    <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                      Loading tasks…
                     </td>
                   </tr>
-                ) : filtered.map((task) => (
-                  <tr key={task.id} className='border-b last:border-0 hover:bg-muted/30 transition-colors'>
-                    <td className='px-4 py-3.5 font-semibold' style={{ fontSize: '0.875rem' }}>{task.id}</td>
-                    <td className='px-4 py-3.5'>
-                      <div className='font-medium'>{task.title}</div>
-                      <div className='text-muted-foreground' style={{ fontSize: '0.8125rem' }}>{t('tasks.ref')}: {task.complaintId || 'N/A'}</div>
+                ) : tasks.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                      No tasks yet.
                     </td>
-                    <td className='px-4 py-3.5'>
-                      <div className='flex items-center gap-2'>
-                        <UserCircle2 className='size-4 text-muted-foreground/60 shrink-0' aria-hidden='true' />
-                        <div>
-                          <div>{task.assignedTo}</div>
-                          <div className='text-muted-foreground' style={{ fontSize: '0.8125rem' }}>{t('label.skill')}: {task.skill}</div>
+                  </tr>
+                ) : (
+                  tasks.map(task => (
+                    <tr key={task.id} className="border-b last:border-0 hover:bg-muted/30">
+                      <td className="p-3 font-medium">{task.id}</td>
+                      <td className="p-3">
+                        <div className="font-medium">{task.title}</div>
+                        <div className="text-xs text-muted-foreground">Ref: {task.complaintId || 'N/A'}</div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center">
+                          <UserCircle2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {task.assignedTo}
                         </div>
-                      </div>
-                    </td>
-                    <td className='px-4 py-3.5'>
-                      <Badge variant='outline' style={priorityStyle(task.priority)}>
-                        {t(`priority.${task.priority}` as Parameters<typeof t>[0])}
-                      </Badge>
-                    </td>
-                    <td className='px-4 py-3.5'>
-                      <Badge variant='outline' style={statusStyle(task.status)}>{statusLabel(task.status)}</Badge>
-                    </td>
-                    <td className='px-4 py-3.5'>
-                      <SLAIndicator sla={task.slaStatus} t={t} />
-                    </td>
-                    <td className='px-4 py-3.5'>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant='outline' size='sm' aria-label={`${t('action.details')} ${task.id}`}>{t('action.details')}</Button>
-                        </DialogTrigger>
-                        <DialogContent className='max-w-2xl'>
-                          <DialogHeader>
-                            <DialogTitle style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1.25rem' }}>
-                              {task.id} — {task.title}
-                            </DialogTitle>
-                            <DialogDescription style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.9375rem' }}>
-                              Created on {new Date(task.createdAt).toLocaleString()}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className='grid grid-cols-2 gap-4 mt-4'>
-                            <div className='space-y-4'>
-                              <div className='border rounded-sm p-4 space-y-2'>
-                                <h4 className='font-semibold text-[0.875rem] pb-2 border-b'>{t('tasks.complaintInfo')}</h4>
-                                <div style={{ fontSize: '0.9375rem' }}><span className='text-muted-foreground'>{t('tasks.ref')}: </span>{task.complaintId}</div>
-                                <div style={{ fontSize: '0.9375rem' }}><span className='text-muted-foreground'>{t('tasks.skillRequired')}: </span>{task.skill}</div>
-                              </div>
-                              <div className='border rounded-sm p-4 space-y-2'>
-                                <h4 className='font-semibold text-[0.875rem] pb-2 border-b'>{t('tasks.assignmentDetails')}</h4>
-                                <div style={{ fontSize: '0.9375rem' }}><span className='text-muted-foreground'>{t('label.assignedTo')}: </span>{task.assignedTo}</div>
-                                <div className='flex items-center gap-2' style={{ fontSize: '0.9375rem' }}>
-                                  <span className='text-muted-foreground'>{t('tasks.aiMatchScore')}: </span>
-                                  <Badge variant='outline' style={{ background: 'var(--status-success)', color: 'var(--status-success-fg)', borderColor: 'var(--status-success-border)' }}>
-                                    {task.assignmentScore}/100
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                            <div className='space-y-4'>
-                              <div className='border rounded-sm p-4 space-y-2'>
-                                <h4 className='font-semibold text-[0.875rem] pb-2 border-b'>{t('tasks.statusSLA')}</h4>
-                                <div className='flex items-center gap-2' style={{ fontSize: '0.9375rem' }}>
-                                  <span className='text-muted-foreground'>{t('label.status')}: </span>
-                                  <Badge variant='outline' style={statusStyle(task.status)}>{statusLabel(task.status)}</Badge>
-                                </div>
-                                <div style={{ fontSize: '0.9375rem' }}><span className='text-muted-foreground'>{t('tasks.dueAt')}: </span>{new Date(task.dueAt).toLocaleTimeString()}</div>
-                                <SLAIndicator sla={task.slaStatus} t={t} />
-                              </div>
-                              <div className='border rounded-sm p-4 space-y-2'>
-                                <h4 className='font-semibold text-[0.875rem] pb-2 border-b'>{t('tasks.completionVerification')}</h4>
-                                {task.completionNotes ? (
-                                  <div style={{ fontSize: '0.9375rem' }}>
-                                    <p className='italic text-muted-foreground'>"{task.completionNotes}"</p>
-                                    <div className='mt-2 h-20 bg-muted rounded-sm flex items-center justify-center text-muted-foreground text-[0.8125rem] border border-dashed'>
-                                      {t('tasks.photoProof')}
-                                    </div>
+                        <div className="text-xs text-muted-foreground ml-6">Skill: {task.skill}</div>
+                      </td>
+                      <td className="p-3">
+                        <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
+                      </td>
+                      <td className="p-3">
+                        <Badge className={getStatusBadge(task.status)}>{task.status}</Badge>
+                      </td>
+                      <td className="p-3">{getSLAIndicator(task.slaStatus)}</td>
+                      <td className="p-3">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">Details</Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>{task.id} - {task.title}</DialogTitle>
+                              <DialogDescription>
+                                Created on {new Date(task.createdAt).toLocaleString()}
+                              </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                              <div className="space-y-4">
+                                <div className="border rounded-md p-3 space-y-2">
+                                  <h4 className="font-semibold text-sm border-b pb-2 mb-2">Complaint Info</h4>
+                                  <div className="text-sm">
+                                    <span className="text-muted-foreground">Ref:</span> {task.complaintId}
                                   </div>
-                                ) : (
-                                  <div className='italic text-muted-foreground' style={{ fontSize: '0.9375rem' }}>{t('tasks.notCompleted')}</div>
-                                )}
+                                  <div className="text-sm">
+                                    <span className="text-muted-foreground">Skill Required:</span> {task.skill}
+                                  </div>
+                                </div>
+
+                                <div className="border rounded-md p-3 space-y-2">
+                                  <h4 className="font-semibold text-sm border-b pb-2 mb-2">Assignment Details</h4>
+                                  <div className="text-sm">
+                                    <span className="text-muted-foreground">Staff:</span> {task.assignedTo}
+                                  </div>
+                                  <div className="text-sm flex items-center">
+                                    <span className="text-muted-foreground mr-2">AI Match Score:</span>
+                                    <Badge variant="secondary">
+                                      {task.assignmentScore != null ? `${task.assignmentScore}/100` : 'N/A'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="space-y-4">
+                                <div className="border rounded-md p-3 space-y-2">
+                                  <h4 className="font-semibold text-sm border-b pb-2 mb-2">Status & SLA</h4>
+                                  <div className="text-sm">
+                                    <span className="text-muted-foreground">Current Status:</span>{' '}
+                                    <Badge className={getStatusBadge(task.status)}>{task.status}</Badge>
+                                  </div>
+                                  <div className="text-sm">
+                                    <span className="text-muted-foreground">Due At:</span>{' '}
+                                    {new Date(task.dueAt).toLocaleTimeString()}
+                                  </div>
+                                  <div className="mt-1">{getSLAIndicator(task.slaStatus)}</div>
+                                </div>
+
+                                <div className="border rounded-md p-3 space-y-2">
+                                  <h4 className="font-semibold text-sm border-b pb-2 mb-2">Completion / Verification</h4>
+                                  {task.completionNotes ? (
+                                    <div className="text-sm">
+                                      <p className="italic">"{task.completionNotes}"</p>
+                                      <div className="mt-2 h-32 bg-muted rounded flex items-center justify-center text-muted-foreground text-xs border-dashed border-2 overflow-hidden">
+                                        {task.completionProofPath ? (
+                                          <img
+                                            src={`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'}/${task.completionProofPath}`}
+                                            alt="Completion Proof"
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          'Photo Proof Attached'
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="text-sm text-muted-foreground italic">Not completed yet.</div>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </td>
-                  </tr>
-                ))}
+
+                            {/* ── Lifecycle actions ─────────────────────── */}
+                            <div className="mt-4 flex justify-end gap-2">
+                              {task.status === 'Assigned' && (
+                                <Button
+                                  onClick={async () => {
+                                    try {
+                                      await api.updateTaskStatus(task._rawId, 'in_progress')
+                                      loadTasks()
+                                      alert('Task started')
+                                    } catch (e: any) {
+                                      alert(e.message || 'Failed to start task')
+                                    }
+                                  }}
+                                >
+                                  Start Task
+                                </Button>
+                              )}
+
+                              {task.status === 'In Progress' && (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="file"
+                                    id={`proof-${task.id}`}
+                                    accept="image/*"
+                                    className="text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                                    onChange={async e => {
+                                      const file = e.target.files?.[0]
+                                      if (file) {
+                                        try {
+                                          await api.uploadCompletionProof(task._rawId, file)
+                                          await api.updateTaskStatus(task._rawId, 'completed')
+                                          loadTasks()
+                                          alert('Task completed and proof uploaded')
+                                        } catch (err: any) {
+                                          alert(err.message || 'Failed to complete task')
+                                        }
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={`proof-${task.id}`} className="sr-only">
+                                    Upload proof to complete task
+                                  </label>
+                                </div>
+                              )}
+
+                              {task.status === 'Verified' && (
+                                <Button
+                                  onClick={async () => {
+                                    try {
+                                      await api.updateTaskStatus(task._rawId, 'closed')
+                                      loadTasks()
+                                      alert('Task closed')
+                                    } catch (e: any) {
+                                      alert(e.message || 'Failed to close task')
+                                    }
+                                  }}
+                                >
+                                  Close Task
+                                </Button>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
