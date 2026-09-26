@@ -122,16 +122,16 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
 
   return (
     <div
-      className="relative w-full max-w-[520px] rounded-3xl bg-white/55 backdrop-blur-2xl backdrop-saturate-140 border border-white/80 p-8 sm:p-10 shadow-[0_24px_64px_-12px_rgba(45,140,255,0.14),0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.95)] transition-all duration-500"
+      className="resort-water-glass-panel relative w-full max-w-[540px] rounded-3xl p-8 sm:p-10 transition-all duration-500"
     >
       {currentView === 'forgot-password' ? (
         /* ── View: Password Reset ────────────────────────────────── */
-        <div className="space-y-6">
+        <div className="relative z-10 space-y-6">
           <div className="text-center space-y-1.5 pb-1">
-            <h2 className="text-2xl sm:text-[28px] font-bold tracking-tight text-[#172B3A]">
+            <h2 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
               Reset your password
             </h2>
-            <p className="text-[#556987] text-[15px] font-medium leading-relaxed">
+            <p className="text-[#E2E8F0] text-[15px] font-medium leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
               Enter your email to receive a secure reset link.
             </p>
           </div>
@@ -144,7 +144,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
           )}
 
           {resetSuccessMessage && (
-            <div className="p-3.5 rounded-xl bg-[#2D8CFF]/10 border border-[#2D8CFF]/25 text-[#0F172A] text-sm flex items-start gap-2.5">
+            <div className="p-3.5 rounded-xl bg-[#2D8CFF]/20 border border-[#2D8CFF]/40 text-white text-sm flex items-start gap-2.5">
               <Check className="w-4 h-4 shrink-0 mt-0.5 text-[#2D8CFF]" />
               <div className="flex-1 leading-snug">{resetSuccessMessage}</div>
             </div>
@@ -152,21 +152,21 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
 
           <form onSubmit={handleForgotPassword} className="space-y-4">
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
                 required
-                className="w-full bg-white/60 hover:bg-white/75 focus:bg-white/95 backdrop-blur-sm border border-[#D6E8FF] focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/25 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-medium text-[#172B3A] placeholder-[#8EA3B7] focus:outline-none transition-all"
+                className="w-full bg-black/20 hover:bg-black/25 focus:bg-black/35 backdrop-blur-md border border-white/25 focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/30 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-semibold text-white placeholder-white/60 focus:outline-none transition-all drop-shadow-xs"
               />
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 px-4 rounded-xl bg-[#2D8CFF] hover:bg-[#1A7BFA] active:bg-[#0B6EEA] text-white font-semibold text-[15px] tracking-wide transition-all shadow-[0_6px_20px_rgba(45,140,255,0.35)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#2D8CFF]/40"
+              className="w-full py-4 px-4 rounded-xl bg-[#2D8CFF] hover:bg-[#1A7BFA] active:bg-[#0B6EEA] text-white font-semibold text-[15px] tracking-wide transition-all shadow-[0_6px_20px_rgba(45,140,255,0.4)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#2D8CFF]/40"
             >
               {isLoading ? (
                 <>
@@ -185,7 +185,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                 setErrorMessage(null)
                 setResetSuccessMessage(null)
               }}
-              className="w-full text-center text-sm font-semibold text-[#2D8CFF] hover:text-[#1A7BFA] hover:underline flex items-center justify-center gap-1.5 pt-2 cursor-pointer"
+              className="w-full text-center text-sm font-semibold text-[#60A5FA] hover:text-[#93C5FD] hover:underline flex items-center justify-center gap-1.5 pt-2 cursor-pointer drop-shadow-xs"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Sign In</span>
@@ -194,13 +194,13 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
         </div>
       ) : (
         /* ── Main View: Sign In / Create Account ──────────────────── */
-        <div className="space-y-6">
+        <div className="relative z-10 space-y-6">
           {/* Header without duplicate logo or brand */}
           <div className="text-center space-y-1.5 pb-1">
-            <h2 className="text-3xl sm:text-[34px] font-bold tracking-tight text-[#172B3A]">
+            <h2 className="text-3xl sm:text-[34px] font-extrabold tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
               {currentView === 'register' ? 'Create your account' : 'Sign in'}
             </h2>
-            <p className="text-[#556987] text-[15px] font-medium">
+            <p className="text-[#E2E8F0] text-[15px] font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
               {currentView === 'register'
                 ? 'Start your Smart Resort 360 experience.'
                 : 'Access your Smart Resort 360 experience.'}
@@ -209,17 +209,17 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
 
           {/* Mode Selector Tabs: [ Guest / User ] [ Admin / Staff ] */}
           {currentView === 'signin' && (
-            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-white/40 border border-white/70 backdrop-blur-xs">
+            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-black/20 border border-white/25 backdrop-blur-md">
               <button
                 type="button"
                 onClick={() => {
                   setAuthMode('guest')
                   setErrorMessage(null)
                 }}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-semibold tracking-normal transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm tracking-normal transition-all cursor-pointer ${
                   authMode === 'guest'
-                    ? 'bg-[#2D8CFF]/15 text-[#0F172A] shadow-xs border border-[#2D8CFF]/30'
-                    : 'text-[#64748B] hover:text-[#0F172A] hover:bg-white/30'
+                    ? 'bg-[#2D8CFF] text-white font-bold shadow-md'
+                    : 'text-white/80 hover:text-white hover:bg-white/10 font-medium'
                 }`}
               >
                 <User className="w-4 h-4" />
@@ -232,10 +232,10 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                   setAuthMode('staff')
                   setErrorMessage(null)
                 }}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-semibold tracking-normal transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm tracking-normal transition-all cursor-pointer ${
                   authMode === 'staff'
-                    ? 'bg-[#2D8CFF]/15 text-[#0F172A] shadow-xs border border-[#2D8CFF]/30'
-                    : 'text-[#64748B] hover:text-[#0F172A] hover:bg-white/30'
+                    ? 'bg-[#2D8CFF] text-white font-bold shadow-md'
+                    : 'text-white/80 hover:text-white hover:bg-white/10 font-medium'
                 }`}
               >
                 <ShieldCheck className="w-4 h-4" />
@@ -258,31 +258,31 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
               /* Registration Form */
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Full Name"
                     required
-                    className="w-full bg-white/60 hover:bg-white/75 focus:bg-white/95 backdrop-blur-sm border border-[#D6E8FF] focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/25 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-medium text-[#172B3A] placeholder-[#8EA3B7] focus:outline-none transition-all"
+                    className="w-full bg-black/20 hover:bg-black/25 focus:bg-black/35 backdrop-blur-md border border-white/25 focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/30 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-semibold text-white placeholder-white/60 focus:outline-none transition-all drop-shadow-xs"
                   />
                 </div>
 
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
                     required
-                    className="w-full bg-white/60 hover:bg-white/75 focus:bg-white/95 backdrop-blur-sm border border-[#D6E8FF] focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/25 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-medium text-[#172B3A] placeholder-[#8EA3B7] focus:outline-none transition-all"
+                    className="w-full bg-black/20 hover:bg-black/25 focus:bg-black/35 backdrop-blur-md border border-white/25 focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/30 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-semibold text-white placeholder-white/60 focus:outline-none transition-all drop-shadow-xs"
                   />
                 </div>
 
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
@@ -290,19 +290,19 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                     placeholder="Password (min 6 characters)"
                     required
                     minLength={6}
-                    className="w-full bg-white/60 hover:bg-white/75 focus:bg-white/95 backdrop-blur-sm border border-[#D6E8FF] focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/25 rounded-xl pl-10 pr-10 py-3.5 text-[15px] font-medium text-[#172B3A] placeholder-[#8EA3B7] focus:outline-none transition-all"
+                    className="w-full bg-black/20 hover:bg-black/25 focus:bg-black/35 backdrop-blur-md border border-white/25 focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/30 rounded-xl pl-10 pr-10 py-3.5 text-[15px] font-semibold text-white placeholder-white/60 focus:outline-none transition-all drop-shadow-xs"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#172B3A] cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
 
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
@@ -310,12 +310,12 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                     placeholder="Confirm Password"
                     required
                     minLength={6}
-                    className="w-full bg-white/60 hover:bg-white/75 focus:bg-white/95 backdrop-blur-sm border border-[#D6E8FF] focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/25 rounded-xl pl-10 pr-10 py-3.5 text-[15px] font-medium text-[#172B3A] placeholder-[#8EA3B7] focus:outline-none transition-all"
+                    className="w-full bg-black/20 hover:bg-black/25 focus:bg-black/35 backdrop-blur-md border border-white/25 focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/30 rounded-xl pl-10 pr-10 py-3.5 text-[15px] font-semibold text-white placeholder-white/60 focus:outline-none transition-all drop-shadow-xs"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#172B3A] cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white cursor-pointer"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -324,7 +324,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-4 px-4 rounded-xl bg-[#2D8CFF] hover:bg-[#1A7BFA] active:bg-[#0B6EEA] text-white font-semibold text-[15px] tracking-wide transition-all shadow-[0_6px_20px_rgba(45,140,255,0.35)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 mt-2 focus:outline-none focus:ring-2 focus:ring-[#2D8CFF]/40"
+                  className="w-full py-4 px-4 rounded-xl bg-[#2D8CFF] hover:bg-[#1A7BFA] active:bg-[#0B6EEA] text-white font-semibold text-[15px] tracking-wide transition-all shadow-[0_6px_20px_rgba(45,140,255,0.4)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 mt-2 focus:outline-none focus:ring-2 focus:ring-[#2D8CFF]/40"
                 >
                   {isLoading ? (
                     <>
@@ -343,7 +343,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                       setCurrentView('signin')
                       setErrorMessage(null)
                     }}
-                    className="text-sm font-semibold text-[#2D8CFF] hover:text-[#1A7BFA] hover:underline cursor-pointer"
+                    className="text-sm font-semibold text-[#60A5FA] hover:text-[#93C5FD] hover:underline cursor-pointer drop-shadow-xs"
                   >
                     Already have an account? Sign In
                   </button>
@@ -357,7 +357,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl bg-white/70 hover:bg-white border border-white/80 text-[#172B3A] font-medium text-sm transition-all shadow-xs hover:shadow cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl bg-white/95 hover:bg-white active:bg-white/90 border border-white text-[#0F172A] font-semibold text-sm transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                     <path
@@ -378,58 +378,58 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                     />
                   </svg>
                   <div className="flex flex-col items-start leading-tight">
-                    <span className="font-semibold text-sm text-[#172B3A]">Continue with Google</span>
+                    <span className="font-semibold text-sm text-[#0F172A]">Continue with Google</span>
                     <span className="text-xs text-[#64748B]">For guests and visitors</span>
                   </div>
                 </button>
 
                 <div className="relative flex items-center justify-center">
-                  <div className="border-t border-[#D6E8FF] w-full" />
-                  <span className="bg-transparent px-3 text-xs uppercase tracking-wider text-[#64748B] font-semibold">
+                  <div className="border-t border-white/20 w-full" />
+                  <span className="bg-transparent px-3 text-xs uppercase tracking-wider text-white/70 font-semibold drop-shadow-xs">
                     OR
                   </span>
-                  <div className="border-t border-[#D6E8FF] w-full" />
+                  <div className="border-t border-white/20 w-full" />
                 </div>
 
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="guest@example.com"
                       required
-                      className="w-full bg-white/60 hover:bg-white/75 focus:bg-white/95 backdrop-blur-sm border border-[#D6E8FF] focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/25 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-medium text-[#172B3A] placeholder-[#8EA3B7] focus:outline-none transition-all"
+                      className="w-full bg-black/20 hover:bg-black/25 focus:bg-black/35 backdrop-blur-md border border-white/25 focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/30 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-semibold text-white placeholder-white/60 focus:outline-none transition-all drop-shadow-xs"
                     />
                   </div>
 
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Password"
                       required
-                      className="w-full bg-white/60 hover:bg-white/75 focus:bg-white/95 backdrop-blur-sm border border-[#D6E8FF] focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/25 rounded-xl pl-10 pr-10 py-3.5 text-[15px] font-medium text-[#172B3A] placeholder-[#8EA3B7] focus:outline-none transition-all"
+                      className="w-full bg-black/20 hover:bg-black/25 focus:bg-black/35 backdrop-blur-md border border-white/25 focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/30 rounded-xl pl-10 pr-10 py-3.5 text-[15px] font-semibold text-white placeholder-white/60 focus:outline-none transition-all drop-shadow-xs"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#172B3A] cursor-pointer"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-[#556987] pt-0.5">
+                  <div className="flex items-center justify-between text-xs text-white/90 pt-0.5">
                     <label className="flex items-center gap-1.5 cursor-pointer font-medium">
                       <input
                         type="checkbox"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        className="rounded border-[#D6E8FF] text-[#2D8CFF] focus:ring-[#2D8CFF] w-4 h-4 cursor-pointer accent-[#2D8CFF]"
+                        className="rounded border-white/40 text-[#2D8CFF] focus:ring-[#2D8CFF] w-4 h-4 cursor-pointer accent-[#2D8CFF]"
                       />
                       <span>Remember me</span>
                     </label>
@@ -439,7 +439,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                         setCurrentView('forgot-password')
                         setErrorMessage(null)
                       }}
-                      className="hover:text-[#2D8CFF] font-semibold transition-colors cursor-pointer underline underline-offset-2"
+                      className="text-[#60A5FA] hover:text-[#93C5FD] font-semibold transition-colors cursor-pointer underline underline-offset-2 drop-shadow-xs"
                     >
                       Forgot password?
                     </button>
@@ -448,7 +448,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-4 px-4 rounded-xl bg-[#2D8CFF] hover:bg-[#1A7BFA] active:bg-[#0B6EEA] text-white font-semibold text-[15px] tracking-wide transition-all shadow-[0_6px_20px_rgba(45,140,255,0.35)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 mt-1 focus:outline-none focus:ring-2 focus:ring-[#2D8CFF]/40"
+                    className="w-full py-4 px-4 rounded-xl bg-[#2D8CFF] hover:bg-[#1A7BFA] active:bg-[#0B6EEA] text-white font-semibold text-[15px] tracking-wide transition-all shadow-[0_6px_20px_rgba(45,140,255,0.4)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 mt-1 focus:outline-none focus:ring-2 focus:ring-[#2D8CFF]/40"
                   >
                     {isLoading ? (
                       <>
@@ -467,7 +467,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                         setCurrentView('register')
                         setErrorMessage(null)
                       }}
-                      className="text-sm font-semibold text-[#2D8CFF] hover:text-[#1A7BFA] hover:underline cursor-pointer"
+                      className="text-sm font-semibold text-[#60A5FA] hover:text-[#93C5FD] hover:underline cursor-pointer drop-shadow-xs"
                     >
                       Don't have an account? Create one
                     </button>
@@ -479,43 +479,43 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
             /* ── Mode 2: Admin / Staff ────────────────────────────── */
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="staff@smartresort360.com"
                   required
-                  className="w-full bg-white/60 hover:bg-white/75 focus:bg-white/95 backdrop-blur-sm border border-[#D6E8FF] focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/25 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-medium text-[#172B3A] placeholder-[#8EA3B7] focus:outline-none transition-all"
+                  className="w-full bg-black/20 hover:bg-black/25 focus:bg-black/35 backdrop-blur-md border border-white/25 focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/30 rounded-xl pl-10 pr-4 py-3.5 text-[15px] font-semibold text-white placeholder-white/60 focus:outline-none transition-all drop-shadow-xs"
                 />
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Staff Password"
                   required
-                  className="w-full bg-white/60 hover:bg-white/75 focus:bg-white/95 backdrop-blur-sm border border-[#D6E8FF] focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/25 rounded-xl pl-10 pr-10 py-3.5 text-[15px] font-medium text-[#172B3A] placeholder-[#8EA3B7] focus:outline-none transition-all"
+                  className="w-full bg-black/20 hover:bg-black/25 focus:bg-black/35 backdrop-blur-md border border-white/25 focus:border-[#2D8CFF] focus:ring-2 focus:ring-[#2D8CFF]/30 rounded-xl pl-10 pr-10 py-3.5 text-[15px] font-semibold text-white placeholder-white/60 focus:outline-none transition-all drop-shadow-xs"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#172B3A] cursor-pointer"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-[#556987] pt-0.5">
+              <div className="flex items-center justify-between text-xs text-white/90 pt-0.5">
                 <label className="flex items-center gap-1.5 cursor-pointer font-medium">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded border-[#D6E8FF] text-[#2D8CFF] focus:ring-[#2D8CFF] w-4 h-4 cursor-pointer accent-[#2D8CFF]"
+                    className="rounded border-white/40 text-[#2D8CFF] focus:ring-[#2D8CFF] w-4 h-4 cursor-pointer accent-[#2D8CFF]"
                   />
                   <span>Remember me</span>
                 </label>
@@ -525,7 +525,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                     setCurrentView('forgot-password')
                     setErrorMessage(null)
                   }}
-                  className="hover:text-[#2D8CFF] font-semibold transition-colors cursor-pointer underline underline-offset-2"
+                  className="text-[#60A5FA] hover:text-[#93C5FD] font-semibold transition-colors cursor-pointer underline underline-offset-2 drop-shadow-xs"
                 >
                   Forgot password?
                 </button>
@@ -534,7 +534,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-4 px-4 rounded-xl bg-[#2D8CFF] hover:bg-[#1A7BFA] active:bg-[#0B6EEA] text-white font-semibold text-[15px] tracking-wide transition-all shadow-[0_6px_20px_rgba(45,140,255,0.35)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 mt-1 focus:outline-none focus:ring-2 focus:ring-[#2D8CFF]/40"
+                className="w-full py-4 px-4 rounded-xl bg-[#2D8CFF] hover:bg-[#1A7BFA] active:bg-[#0B6EEA] text-white font-semibold text-[15px] tracking-wide transition-all shadow-[0_6px_20px_rgba(45,140,255,0.4)] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 mt-1 focus:outline-none focus:ring-2 focus:ring-[#2D8CFF]/40"
               >
                 {isLoading ? (
                   <>
@@ -546,7 +546,7 @@ export function ResortAuthCard({ onSuccess }: ResortAuthCardProps) {
                 )}
               </button>
 
-              <div className="p-3 rounded-xl bg-[#2D8CFF]/10 border border-[#2D8CFF]/20 text-xs text-[#2D8CFF] font-medium text-center leading-relaxed">
+              <div className="p-3.5 rounded-xl bg-black/20 border border-white/20 backdrop-blur-md text-xs text-white/80 font-medium text-center leading-relaxed">
                 Access is authorized by resort credentials. Select your role during Firebase account setup.
               </div>
             </form>

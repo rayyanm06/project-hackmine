@@ -121,14 +121,35 @@ export function ResortEntryExperience({
 
             {/* ── RIGHT SIDE: The Main Moving Object (Moves to center, covers left text, slides down) ── */}
             <div
-              className={`w-full lg:w-auto flex justify-center lg:justify-end shrink-0 z-30 ${
+              className={`relative w-full lg:w-auto flex justify-center lg:justify-end shrink-0 z-30 ${
                 exitPhase === 'idle'
                   ? 'animate-login-right-slide'
                   : exitPhase === 'card-to-center' || exitPhase === 'center-hold'
-                  ? 'translate-x-0 lg:-translate-x-[calc(42vw-260px)] translate-y-0 transition-transform duration-800 ease-[cubic-bezier(0.25,1,0.5,1)]'
-                  : 'translate-x-0 lg:-translate-x-[calc(42vw-260px)] translate-y-[125vh] transition-transform duration-800 ease-[cubic-bezier(0.4,0,0.2,1)]'
+                  ? 'translate-x-0 lg:-translate-x-[calc(42vw-270px)] translate-y-0 transition-transform duration-800 ease-[cubic-bezier(0.25,1,0.5,1)]'
+                  : 'translate-x-0 lg:-translate-x-[calc(42vw-270px)] translate-y-[125vh] transition-transform duration-800 ease-[cubic-bezier(0.4,0,0.2,1)]'
               }`}
             >
+              {/* Luminous upward optical trail attached to the top of the downward-moving card */}
+              {exitPhase === 'sliding-down' && (
+                <div
+                  className="animate-glass-trail absolute bottom-[96%] left-1/2 -translate-x-1/2 w-[92%] h-[480px] pointer-events-none z-0"
+                  aria-hidden="true"
+                >
+                  {/* Diffuse ambient blue-white shimmer */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/40 via-[#2D8CFF]/25 to-transparent blur-2xl" />
+
+                  {/* Core refractive glass light beam */}
+                  <div className="absolute inset-x-6 inset-y-0 bg-gradient-to-t from-white/75 via-[#2D8CFF]/45 to-transparent blur-md" />
+
+                  {/* Twin specular edge streaks reflecting off glass boundaries */}
+                  <div className="absolute left-2 inset-y-0 w-[2.5px] bg-gradient-to-t from-white/90 via-[#2D8CFF]/60 to-transparent blur-[1.5px]" />
+                  <div className="absolute right-2 inset-y-0 w-[2.5px] bg-gradient-to-t from-white/90 via-[#2D8CFF]/60 to-transparent blur-[1.5px]" />
+
+                  {/* Concentrated bottom light flare at the glass rim */}
+                  <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-t from-white/80 via-[#2D8CFF]/50 to-transparent blur-sm" />
+                </div>
+              )}
+
               <ResortAuthCard
                 onSuccess={handleAuthSuccess}
               />
